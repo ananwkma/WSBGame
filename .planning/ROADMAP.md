@@ -7,6 +7,7 @@
 - [x] **Phase 4: Polish & Endings** - Final narrative outcomes, save state, and juice.
 - [x] **Phase 5: Advanced Trading & Dynamic Social** - Options trading, UI enhancements, and reactive social layer.
 - [x] **Phase 6: Options Chains & Portfolio Analytics** - High-fidelity options, portfolio tracking, and visual overhaul.
+- [ ] **Phase 7: History Tab & Performance Indicators** - Trade ledger, cost basis, and color-coded gain/loss feedback.
 
 ## Phase Details
 
@@ -26,6 +27,20 @@
 - [x] 6-02-PLAN.md — Visual Overhaul: Diagonal Charts & Pre-population.
 - [x] 6-03-PLAN.md — UI: Portfolio Graph & Options Chain.
 
+### Phase 7: History Tab & Performance Indicators
+**Goal**: Implement a complete trade ledger and provide real-time performance feedback across the UI.
+**Depends on**: Phase 6
+**Requirements**: TRADE-09, TRADE-10, TRADE-11
+**Success Criteria**:
+  1. A 'History' tab in Robbinghood displays a scrollable list of all past trades (BUY/SELL/EXPIRY).
+  2. The main portfolio screen shows "Daily Change" in both dollar amount and percentage (green/red).
+  3. Every stock in the market list shows its 24h (1 turn) percentage change.
+  4. Active holdings show total unrealized gain/loss percentage based on average cost basis.
+**Plans**:
+- [ ] 7-01-PLAN.md — State: Trade Ledger & Cost Basis Logic.
+- [ ] 7-02-PLAN.md — UI: Performance Indicators & Color-coded Feedback.
+- [ ] 7-03-PLAN.md — UI: History Tab & Expiry Logging.
+
 ## Progress Table
 
 | Phase | Plans Complete | Status | Completed |
@@ -36,3 +51,4 @@
 | 4: Polish & Endings | 2/2 | Completed | 2026-03-05 |
 | 5: Advanced Trading | 3/3 | Completed | 2026-03-05 |
 | 6: Options Chains | 3/3 | Completed | 2026-03-05 |
+| 7: History & Perf | 0/3 | Not started | - |
