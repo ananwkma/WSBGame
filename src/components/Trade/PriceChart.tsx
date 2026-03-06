@@ -9,10 +9,21 @@ interface PriceChartProps {
   color?: string;
 }
 
-export const PriceChart: React.FC<PriceChartProps> = ({ history, width, height, color = '#e0dbcb' }) => {
+export const PriceChart: React.FC<PriceChartProps> = ({ history, width, height, color }) => {
   const formatCurrency = (cents: number) => {
     return `$${(cents / 100).toFixed(0)}`;
   };
+
+  const chartColor = useMemo(() => {
+    if (color) return color;
+    if (history.length < 2) return '#e0dbcb';
+    
+    const getValue = (p: any) => p.price !== undefined ? p.price : p.value;
+    const initial = getValue(history[0]);
+    const current = getValue(history[history.length - 1]);
+    
+    return current >= initial ? '#94ba8b' : '#ba8b8b';
+  }, [history, color]);
 
   const pathData = useMemo(() => {
     if (history.length < 2) return '';
@@ -83,7 +94,7 @@ export const PriceChart: React.FC<PriceChartProps> = ({ history, width, height, 
         <path
           d={typeof pathData === 'object' ? pathData.path : ''}
           fill="none"
-          stroke={color}
+          stroke={chartColor}
           strokeWidth="2"
         />
       </svg>
