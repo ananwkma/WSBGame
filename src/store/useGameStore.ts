@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GameStore, StockTicker, GameEvent, EndingType, StockData } from './types';
-import { generateHistoricalData } from '../utils/marketUtils';
+import { generateHistoricalData, calculateBS } from '../utils/marketUtils';
 
 const INITIAL_EVENTS: GameEvent[] = [
   {
@@ -117,41 +117,35 @@ const INITIAL_EVENTS: GameEvent[] = [
   },
 ];
 
-const INITIAL_STOCKS: Record<StockTicker, { price: number }> = {
-  '$GAME': { price: 10000 },
-  '$POPC': { price: 5000 },
-  '$APE': { price: 2500 },
+const INITIAL_STOCKS: Record<StockTicker, { price: number, iv: number }> = {
+  '$GAME': { price: 10000, iv: 1.5 },
+  '$POPC': { price: 5000, iv: 0.8 },
+  '$APE': { price: 2500, iv: 3.0 },
 };
 
 // --- FINANCIAL UTILITIES ---
 
-export const calculateDelta = (price: number, strike: number, type: 'CALL' | 'PUT') => {
-  const moneyness = (price - strike) / (strike * 0.2);
-  const delta = 1 / (1 + Math.exp(-2 * moneyness));
-  return type === 'CALL' ? delta : delta - 1;
+export const calculateDelta = (price: number, strike: number, type: 'CALL' | 'PUT', iv: number, t: number = 1/252) => {
+  return calculateBS(type, price, strike, t, iv).delta;
 };
 
-export const calculateGamma = (price: number, strike: number) => {
-  const moneyness = (price - strike) / (strike * 0.2);
-  const delta = 1 / (1 + Math.exp(-2 * moneyness));
-  const pdf = delta * (1 - delta);
-  return (pdf * 2) / (strike * 0.2);
+export const calculateGamma = (price: number, strike: number, iv: number, t: number = 1/252) => {
+  return calculateBS('CALL', price, strike, t, iv).gamma;
 };
 
-export const calculateTheta = (price: number, strike: number) => {
-  const moneyness = (price - strike) / (strike * 0.2);
-  const extrinsic = Math.exp(-Math.pow(moneyness, 2) * 2) * (strike * 0.05);
-  return -extrinsic; // Decay per day
+export const calculateTheta = (price: number, strike: number, type: 'CALL' | 'PUT', iv: number, t: number = 1/252) => {
+  return calculateBS(type, price, strike, t, iv).theta;
 };
 
-export const calculateOptionPrice = (price: number, strike: number, type: 'CALL' | 'PUT') => {
-  const intrinsic = type === 'CALL' ? Math.max(0, price - strike) : Math.max(0, strike - price);
-  const moneyness = (price - strike) / (strike * 0.2);
-  const extrinsic = Math.exp(-Math.pow(moneyness, 2) * 2) * (strike * 0.05);
-  return Math.max(1, Math.floor(intrinsic + extrinsic));
+export const calculateVega = (price: number, strike: number, iv: number, t: number = 1/252) => {
+  return calculateBS('CALL', price, strike, t, iv).vega;
 };
 
-export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, heldOptions: any[] = []) => {
+export const calculateOptionPrice = (price: number, strike: number, type: 'CALL' | 'PUT', iv: number, t: number = 1/252) => {
+  return calculateBS(type, price, strike, t, iv).price;
+};
+
+export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, iv: number, heldOptions: any[] = []) => {
   const roundTo = 500; // $5.00 increments
   
   // 1. Generate standard OTM strikes
@@ -178,18 +172,22 @@ export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, 
   const allStrikes = Array.from(new Set([...otmStrikes, ...heldStrikes])).sort((a, b) => a - b);
 
   return allStrikes.flatMap((strike) => {
-    const callPrice = calculateOptionPrice(currentPrice, strike, 'CALL');
+    const callBS = calculateBS('CALL', currentPrice, strike, 1/252, iv);
+    const callPrice = callBS.price;
     const callGreeks = {
-      delta: calculateDelta(currentPrice, strike, 'CALL'),
-      gamma: calculateGamma(currentPrice, strike),
-      theta: calculateTheta(currentPrice, strike),
+      delta: callBS.delta,
+      gamma: callBS.gamma,
+      theta: callBS.theta,
+      vega: callBS.vega,
     };
 
-    const putPrice = calculateOptionPrice(currentPrice, strike, 'PUT');
+    const putBS = calculateBS('PUT', currentPrice, strike, 1/252, iv);
+    const putPrice = putBS.price;
     const putGreeks = {
-      delta: calculateDelta(currentPrice, strike, 'PUT'),
-      gamma: calculateGamma(currentPrice, strike),
-      theta: calculateTheta(currentPrice, strike),
+      delta: putBS.delta,
+      gamma: putBS.gamma,
+      theta: putBS.theta,
+      vega: putBS.vega,
     };
 
     return [
@@ -235,16 +233,19 @@ const getInitialState = () => {
       '$GAME': {
         ticker: '$GAME',
         currentPrice: INITIAL_STOCKS['$GAME'].price,
+        iv: INITIAL_STOCKS['$GAME'].iv,
         history: generateHistoricalData(INITIAL_STOCKS['$GAME'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
       },
       '$POPC': {
         ticker: '$POPC',
         currentPrice: INITIAL_STOCKS['$POPC'].price,
+        iv: INITIAL_STOCKS['$POPC'].iv,
         history: generateHistoricalData(INITIAL_STOCKS['$POPC'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
       },
       '$APE': {
         ticker: '$APE',
         currentPrice: INITIAL_STOCKS['$APE'].price,
+        iv: INITIAL_STOCKS['$APE'].iv,
         history: generateHistoricalData(INITIAL_STOCKS['$APE'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
       },
     } as Record<StockTicker, StockData>,
@@ -548,12 +549,37 @@ export const useGameStore = create<GameStore>()(
 
         (Object.keys(nextStocks) as StockTicker[]).forEach((ticker) => {
           const stock = nextStocks[ticker];
+          const baseIv = INITIAL_STOCKS[ticker].iv;
+          let nextIv = stock.iv;
+
+          // IV Dynamics: Anticipation spikes and post-event crush
+          const futureShift = eventQueue.find(e => 
+            e.type === 'SHIFT' && 
+            e.payload.ticker === ticker && 
+            (e.day === nextDayNum + 1 || e.day === nextDayNum + 2)
+          );
+          
+          const currentShift = eventQueue.find(e => 
+            e.type === 'SHIFT' && 
+            e.payload.ticker === ticker && 
+            e.day === nextDayNum
+          );
+
+          if (currentShift) {
+            nextIv = baseIv; // IV Crush immediately when the event hits
+          } else if (futureShift) {
+            nextIv += 1.0; // IV Spike (market anticipation)
+          } else {
+            nextIv = Math.max(baseIv, nextIv * 0.9); // Slow decay towards base IV
+          }
+
           const volatility = Math.random() * 0.4 + 0.1;
           const direction = Math.random() > 0.5 ? 1 : -1;
           const change = 1 + (volatility * direction);
           let nextPrice = Math.round(stock.currentPrice * change);
           if (nextPrice < 1) nextPrice = 1;
-          nextStocks[ticker] = { ...stock, currentPrice: nextPrice };
+          
+          nextStocks[ticker] = { ...stock, currentPrice: nextPrice, iv: nextIv };
         });
 
         const shifts = eventQueue.filter(e => e.day === nextDayNum && e.type === 'SHIFT');
