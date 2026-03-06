@@ -1,34 +1,59 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useGameStore } from '../../../store/useGameStore';
+import { MessageList } from './MessageList';
+import { MessageThread } from './MessageThread';
 import './Phone.css';
 
 export const ChatApp: React.FC = () => {
-  const messages = useGameStore((state) => state.messages);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const threads = useGameStore((state) => state.threads);
+  const setThreadRead = useGameStore((state) => state.setThreadRead);
+  
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const [initialLastReadDay, setInitialLastReadDay] = useState<number>(0);
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = 0; // Newest messages at top in store, but usually chat scrolls to bottom
-      // Actually, store unshifts messages, so newest are at index 0.
-      // If we want newest at bottom, we should reverse or append.
-      // Let's check processEvents in store. 
-      // It uses unshift, so index 0 is newest.
+  const sortedThreads = useMemo(() => {
+    return Object.values(threads).sort((a, b) => {
+      const aLastMsg = a.messages[0];
+      const bLastMsg = b.messages[0];
+      
+      if (!aLastMsg && !bLastMsg) return 0;
+      if (!aLastMsg) return 1;
+      if (!bLastMsg) return -1;
+      
+      return bLastMsg.day - aLastMsg.day;
+    });
+  }, [threads]);
+
+  const handleSelectThread = (contactId: string) => {
+    const thread = threads[contactId];
+    if (thread) {
+      // Capture the lastReadDay BEFORE we mark it as read for the "New Messages" separator
+      setInitialLastReadDay(thread.lastReadDay);
+      setThreadRead(contactId);
+      setSelectedContactId(contactId);
     }
-  }, [messages]);
+  };
+
+  const handleBack = () => {
+    setSelectedContactId(null);
+  };
+
+  if (selectedContactId && threads[selectedContactId]) {
+    return (
+      <MessageThread 
+        thread={threads[selectedContactId]} 
+        initialLastReadDay={initialLastReadDay}
+        onBack={handleBack}
+      />
+    );
+  }
 
   return (
-    <div className="phone-app-content" ref={scrollRef}>
-      {messages.map((msg) => (
-        <div 
-          key={msg.id} 
-          className={`chat-bubble ${msg.sender === 'YOU' ? 'me' : 'sender'}`}
-        >
-          {msg.sender !== 'YOU' && (
-            <div className="chat-sender-name">{msg.sender}</div>
-          )}
-          <div className="chat-text pixel-bold">{msg.text}</div>
-        </div>
-      ))}
+    <div className="phone-app-content" style={{ padding: 0 }}>
+      <MessageList 
+        threads={sortedThreads} 
+        onSelectThread={handleSelectThread} 
+      />
     </div>
   );
 };

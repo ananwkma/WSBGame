@@ -21,6 +21,41 @@
   z-index: 10;
 }
 
+/* Battery Icon */
+.battery-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.battery-body {
+  width: 18px;
+  height: 10px;
+  border: 1px solid #706b66;
+  padding: 1px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.battery-fill {
+  height: 100%;
+  background-color: #ba8b8b; /* Red */
+}
+
+.battery-tip {
+  width: 2px;
+  height: 4px;
+  background-color: #706b66;
+  border-radius: 0 1px 1px 0;
+}
+
+.battery-text {
+  font-size: 10px;
+  font-weight: bold;
+  color: #ba8b8b;
+}
+
 .phone-app-content {
   flex: 1;
   overflow-y: auto;
@@ -150,4 +185,141 @@
 .phone-tab.active {
   background-color: #706b66;
   color: #2b2b26;
+}
+
+/* Messaging App Styles */
+.message-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.message-list-item {
+  display: flex;
+  padding: 12px;
+  border-bottom: 1px solid #706b66;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.message-list-item:hover {
+  background-color: #3b3b36;
+}
+
+.contact-avatar {
+  font-size: 24px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #706b66;
+  border: 2px solid #9a9483;
+}
+
+.contact-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.contact-name-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.contact-name {
+  font-size: 14px;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #ba8b8b; /* Red dot */
+  border-radius: 50%;
+}
+
+.last-message-snippet {
+  font-size: 11px;
+  color: #9a9483;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Thread View */
+.message-thread-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.thread-header {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 2px solid #706b66;
+  background-color: #3b3b36;
+}
+
+.back-button {
+  background: none;
+  border: 2px solid #9a9483;
+  color: #e0dbcb;
+  padding: 4px 8px;
+  font-size: 10px;
+  margin-right: 12px;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background-color: #706b66;
+}
+
+.thread-contact-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.thread-avatar {
+  font-size: 18px;
+}
+
+.thread-messages {
+  flex: 1;
+}
+
+.chat-day {
+  font-size: 8px;
+  color: #9a9483;
+  text-align: right;
+  margin-top: 2px;
+}
+
+.new-messages-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 16px 0;
+  position: relative;
+}
+
+.new-messages-separator::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #ba8b8b;
+  z-index: 0;
+}
+
+.new-messages-separator span {
+  background-color: #2b2b26;
+  padding: 0 8px;
+  font-size: 10px;
+  color: #ba8b8b;
+  z-index: 1;
 }
