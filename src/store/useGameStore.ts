@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { GameStore, StockTicker, GameEvent, EndingType } from './types';
+import type { GameStore, StockTicker, GameEvent, EndingType, StockData } from './types';
+import { generateHistoricalData } from '../utils/marketUtils';
 
 const INITIAL_EVENTS: GameEvent[] = [
 // ... (rest of INITIAL_EVENTS)
@@ -199,19 +200,19 @@ const getInitialState = () => ({
     '$GAME': {
       ticker: '$GAME',
       currentPrice: INITIAL_STOCKS['$GAME'].price,
-      history: [{ turn: 1, price: INITIAL_STOCKS['$GAME'].price }],
+      history: generateHistoricalData(INITIAL_STOCKS['$GAME'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
     },
     '$POPC': {
       ticker: '$POPC',
       currentPrice: INITIAL_STOCKS['$POPC'].price,
-      history: [{ turn: 1, price: INITIAL_STOCKS['$POPC'].price }],
+      history: generateHistoricalData(INITIAL_STOCKS['$POPC'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
     },
     '$APE': {
       ticker: '$APE',
       currentPrice: INITIAL_STOCKS['$APE'].price,
-      history: [{ turn: 1, price: INITIAL_STOCKS['$APE'].price }],
+      history: generateHistoricalData(INITIAL_STOCKS['$APE'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
     },
-  } as Record<StockTicker, { ticker: StockTicker; currentPrice: number; history: { turn: number; price: number }[] }>,
+  } as Record<StockTicker, StockData>,
   gameStatus: 'playing' as const,
   endingType: null as EndingType | null,
   lastFlash: null as { type: any; timestamp: number } | null,
