@@ -55,7 +55,7 @@ export const OptionsChain: React.FC<OptionsChainProps> = ({ ticker, selectedOpti
                 <div className="premium" style={{ fontWeight: 'bold' }}>{call ? formatCurrency(call.premium) : '-'}</div>
                 {call && (
                   <div className="greeks" style={{ fontSize: '8px', color: '#a89f8c' }}>
-                    Δ{call.delta.toFixed(2)} Γ{call.gamma.toFixed(3)} Θ{call.theta.toFixed(0)}
+                    Δ{call.delta.toFixed(2)} Γ{call.gamma.toFixed(3)} Θ{call.theta.toFixed(0)} V{call.vega.toFixed(2)}
                   </div>
                 )}
               </div>
@@ -77,7 +77,7 @@ export const OptionsChain: React.FC<OptionsChainProps> = ({ ticker, selectedOpti
                 <div className="premium" style={{ fontWeight: 'bold' }}>{put ? formatCurrency(put.premium) : '-'}</div>
                 {put && (
                   <div className="greeks" style={{ fontSize: '8px', color: '#a89f8c' }}>
-                    Δ{put.delta.toFixed(2)} Γ{put.gamma.toFixed(3)} Θ{put.theta.toFixed(0)}
+                    Δ{put.delta.toFixed(2)} Γ{put.gamma.toFixed(3)} Θ{put.theta.toFixed(0)} V{put.vega.toFixed(2)}
                   </div>
                 )}
               </div>
