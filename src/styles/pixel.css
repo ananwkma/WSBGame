@@ -1,0 +1,191 @@
+:root {
+  --tile-size: 8px;
+  background-color: #2b2b26;
+  color: #e0dbcb;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: monospace;
+  overflow: hidden;
+  background-color: #2b2b26;
+}
+
+#root {
+  filter: url(#gb-pocket);
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+* {
+  box-sizing: border-box;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* --- Ending Screen & Global UI Components --- */
+
+.ending-screen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #2b2b26;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.ending-card {
+  padding: 2rem;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  background: #2b2b26;
+  border-radius: 4px;
+}
+
+.ending-title {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  letter-spacing: 2px;
+}
+
+.ending-description {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  line-height: 1.4;
+}
+
+.ending-stats {
+  margin-bottom: 2rem;
+  border-top: 2px solid #ffffff22;
+  border-bottom: 2px solid #ffffff22;
+  padding: 1rem 0;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.5rem 0;
+  font-family: monospace;
+}
+
+.pixel-bold {
+  text-shadow: 1px 0 0 currentColor;
+}
+
+.pixel-button {
+  background: transparent;
+  border: 4px double #ffffff;
+  color: #ffffff;
+  padding: 12px 24px;
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.1s;
+  letter-spacing: 1px;
+}
+
+.pixel-button:hover {
+  background: #ffffff;
+  color: #2b2b26;
+}
+
+.pixel-button:active {
+  transform: translateY(2px);
+}
+
+/* --- CRT & Screen Effects --- */
+
+.crt-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.crt-scanlines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.1) 50%
+  ),
+  linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.03),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.03)
+  );
+  background-size: 100% 3px, 3px 100%;
+  pointer-events: none;
+}
+
+.crt-vignette {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle,
+    rgba(18, 16, 16, 0) 60%,
+    rgba(18, 16, 16, 0.2) 90%,
+    rgba(18, 16, 16, 0.4) 100%
+  );
+  pointer-events: none;
+}
+
+.crt-flicker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(18, 16, 16, 0.01);
+  opacity: 0;
+  pointer-events: none;
+  animation: flicker 0.15s infinite;
+}
+
+@keyframes flicker {
+  0% { opacity: 0.1; }
+  5% { opacity: 0.2; }
+  10% { opacity: 0.1; }
+  15% { opacity: 0.25; }
+  20% { opacity: 0.15; }
+  25% { opacity: 0.1; }
+  30% { opacity: 0.2; }
+  35% { opacity: 0.15; }
+  40% { opacity: 0.1; }
+  45% { opacity: 0.2; }
+  50% { opacity: 0.15; }
+  55% { opacity: 0.1; }
+  60% { opacity: 0.25; }
+  65% { opacity: 0.2; }
+  70% { opacity: 0.15; }
+  75% { opacity: 0.1; }
+  80% { opacity: 0.2; }
+  85% { opacity: 0.15; }
+  90% { opacity: 0.1; }
+  95% { opacity: 0.2; }
+  100% { opacity: 0.1; }
+}

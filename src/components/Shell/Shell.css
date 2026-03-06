@@ -1,0 +1,124 @@
+.viewport {
+  width: 100%;
+  height: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
+  aspect-ratio: 16 / 10;
+  background-color: #1b1b18; /* Desk surface (Darkest) */
+  /* Add subtle desk-like texture/lines */
+  background-image: 
+    linear-gradient(rgba(112, 107, 102, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(112, 107, 102, 0.05) 1px, transparent 1px);
+  background-size: var(--tile-size) var(--tile-size);
+  
+  border: calc(var(--tile-size) / 2) solid #706b66; /* Desk edge (Dark) */
+  box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  margin: auto;
+}
+
+@media (min-aspect-ratio: 16/10) {
+  .viewport {
+    width: auto;
+    height: 100%;
+  }
+}
+
+@media (max-aspect-ratio: 16/10) {
+  .viewport {
+    width: 100%;
+    height: auto;
+  }
+}
+
+.dualViewShell {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  padding: calc(var(--tile-size) * 6);
+  gap: calc(var(--tile-size) * 4);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  align-items: flex-end; /* Objects sit on the "desk" */
+  justify-content: center;
+}
+
+.laptopView {
+  background-color: #a89f94; /* Laptop chassis (Light) */
+  border: 4px solid #706b66;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  min-width: 0;
+  cursor: pointer;
+  box-shadow: 10px 10px 0 rgba(0,0,0,0.5);
+}
+
+.phoneView {
+  background-color: #a89f94; /* Phone chassis (Light) */
+  border: 4px solid #706b66;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  min-width: 0;
+  cursor: pointer;
+  box-shadow: 10px 10px 0 rgba(0,0,0,0.5);
+}
+
+/* Focus: Laptop primary */
+.focusLaptop .laptopView {
+  flex: 5;
+  height: 95%;
+  transform: translateY(-2%) scale(1.02);
+  z-index: 10;
+}
+
+.focusLaptop .phoneView {
+  flex: 1;
+  height: 35%;
+  transform: rotate(15deg) translateY(0);
+  opacity: 0.8;
+  z-index: 5;
+}
+
+/* Focus: Phone primary */
+.focusPhone .laptopView {
+  flex: 1.5;
+  height: 45%;
+  transform: rotate(-10deg) translateY(0);
+  opacity: 0.8;
+  z-index: 5;
+}
+
+.focusPhone .phoneView {
+  flex: 1.5; /* Phone is smaller naturally, so we use less flex but more height ratio */
+  height: 90%;
+  transform: translateY(-2%) scale(1.05);
+  z-index: 10;
+}
+
+.screenContent {
+  flex: 1;
+  background-color: #E0DBCB; /* Screen background */
+  color: #2B2B26; /* Dark text for screen content */
+  margin: var(--tile-size);
+  border: 2px solid #2B2B26;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; 
+  pointer-events: none;
+}
+
+.focusLaptop .laptopView .screenContent,
+.focusPhone .phoneView .screenContent {
+  overflow: auto;
+  pointer-events: auto;
+}
+
+.focusToggle {
+  display: none;
+}
