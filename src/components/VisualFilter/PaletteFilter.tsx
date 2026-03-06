@@ -3,19 +3,29 @@ import React from 'react';
 const PaletteFilter: React.FC = () => (
   <svg style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}>
     <filter id="gb-pocket" colorInterpolationFilters="sRGB">
-      {/* 1. Convert to Grayscale based on Luminance */}
+      {/* 
+          1. Aggressive Saturation Matrix
+          Boosts primaries (R, G, B) by exaggerating the difference between channels.
+          This will make your Red (#ba8b8b) and Green (#94ba8b) "pop" significantly.
+      */}
       <feColorMatrix
         type="matrix"
-        values="0.2126 0.7152 0.0722 0 0
-                0.2126 0.7152 0.0722 0 0
-                0.2126 0.7152 0.0722 0 0
-                0      0      0      1 0"
+        values="2.2 -0.6 -0.6 0 0
+                -0.6 2.2 -0.6 0 0
+                -0.6 -0.6 2.2 0 0
+                0    0    0   1 0"
       />
-      {/* 2. Map Grayscale to Discrete Palette */}
+      
+      {/* 
+          2. Neutral Discrete Mapping
+          By using identical tableValues for R, G, and B, we ensure that:
+          - Grayscale/Beige inputs remain Neutral Gray (removing the yellow tint).
+          - Saturated inputs (like the boosted Red/Green) pass through their respective hues.
+      */}
       <feComponentTransfer>
-        <feFuncR type="discrete" tableValues="0.106 0.439 0.659 0.878" />
-        <feFuncG type="discrete" tableValues="0.106 0.420 0.624 0.859" />
-        <feFuncB type="discrete" tableValues="0.094 0.400 0.580 0.796" />
+        <feFuncR type="discrete" tableValues="0.05 0.35 0.65 0.95" />
+        <feFuncG type="discrete" tableValues="0.05 0.35 0.65 0.95" />
+        <feFuncB type="discrete" tableValues="0.05 0.35 0.65 0.95" />
       </feComponentTransfer>
     </filter>
   </svg>

@@ -12,6 +12,20 @@ export interface OptionContract {
   delta: number;
   gamma: number;
   theta: number;
+  premiumPaid: number; // total premium paid for the contract in cents
+}
+
+export type TradeType = 'BUY' | 'SELL' | 'OPTION_BUY' | 'OPTION_SELL' | 'OPTION_EXPIRY';
+
+export interface TradeEntry {
+  id: string;
+  type: TradeType;
+  ticker: string;
+  amount: number;
+  price: number; // execution price in cents (for options, this is per share)
+  totalValue: number; // amount * price (total premium or cost)
+  day: number;
+  realizedPL?: number; // profit/loss in cents, for SELL/EXPIRY
 }
 
 export interface HistoryPoint {
@@ -49,6 +63,14 @@ export interface Message {
   id: string;
   sender: string;
   text: string;
+  day: number;
+}
+
+export interface Thread {
+  contactName: string;
+  avatar: string;
+  lastReadDay: number;
+  messages: Message[];
 }
 
 export interface ForumPost {
@@ -73,7 +95,7 @@ export interface GameState {
   day: number;
   hype: number; // 0-100
   karma: number; // Reddit-style points
-  messages: Message[];
+  threads: Record<string, Thread>;
   forumPosts: ForumPost[];
   eventQueue: GameEvent[];
   lastFlash: { type: FeedbackType; timestamp: number } | null;
@@ -81,6 +103,8 @@ export interface GameState {
   gameStatus: GameStatus;
   endingType: EndingType | null;
   netWorthHistory: NetWorthPoint[];
+  tradeHistory: TradeEntry[];
+  costBasis: Record<StockTicker, number>;
 }
 
 export interface GameActions {
@@ -95,6 +119,7 @@ export interface GameActions {
   addPopup: (text: string, type: FeedbackType, x?: number, y?: number) => void;
   removePopup: (id: string) => void;
   resetGame: () => void;
+  setThreadRead: (sender: string) => void;
 }
 
 export type GameStore = GameState & GameActions;

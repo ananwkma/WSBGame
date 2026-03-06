@@ -199,44 +199,68 @@ export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, 
   });
 };
 
-const getInitialState = () => ({
-  cash: 10000000, // $100,000.00
-  turn: 1,
-  day: 1,
-  hype: 0,
-  karma: 0,
-  messages: INITIAL_EVENTS.filter(e => e.day === 1 && (e.type === 'MESSAGE' || e.type === 'GURU')).map(e => e.payload),
-  forumPosts: INITIAL_EVENTS.filter(e => e.day === 1 && e.type === 'POST').map(e => e.payload),
-  eventQueue: INITIAL_EVENTS,
-  holdings: {
-    '$GAME': 0,
-    '$POPC': 0,
-    '$APE': 0,
-  } as Record<StockTicker, number>,
-  optionsHoldings: [] as any[],
-  stocks: {
-    '$GAME': {
-      ticker: '$GAME',
-      currentPrice: INITIAL_STOCKS['$GAME'].price,
-      history: generateHistoricalData(INITIAL_STOCKS['$GAME'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
-    },
-    '$POPC': {
-      ticker: '$POPC',
-      currentPrice: INITIAL_STOCKS['$POPC'].price,
-      history: generateHistoricalData(INITIAL_STOCKS['$POPC'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
-    },
-    '$APE': {
-      ticker: '$APE',
-      currentPrice: INITIAL_STOCKS['$APE'].price,
-      history: generateHistoricalData(INITIAL_STOCKS['$APE'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
-    },
-  } as Record<StockTicker, StockData>,
-  gameStatus: 'playing' as const,
-  endingType: null as EndingType | null,
-  lastFlash: null as { type: any; timestamp: number } | null,
-  popups: [] as any[],
-  netWorthHistory: [{ turn: 1, value: 10000000 }],
-});
+const getInitialState = () => {
+  const initialThreads: Record<string, any> = {
+    'Ape Friend': { contactName: 'Ape Friend', avatar: '🦍', lastReadDay: 1, messages: [] },
+    'Wife': { contactName: 'Wife', avatar: '👩', lastReadDay: 1, messages: [] },
+    'Brokerage': { contactName: 'Brokerage', avatar: '🏛️', lastReadDay: 1, messages: [] },
+    'Crypto Guru': { contactName: 'Crypto Guru', avatar: '📉', lastReadDay: 1, messages: [] },
+    "Wife's Boyfriend": { contactName: "Wife's Boyfriend", avatar: '😎', lastReadDay: 1, messages: [] },
+  };
+
+  // Populate initial messages for day 1
+  INITIAL_EVENTS.filter(e => e.day === 1 && (e.type === 'MESSAGE' || e.type === 'GURU')).forEach(e => {
+    const sender = e.payload.sender;
+    if (initialThreads[sender]) {
+      initialThreads[sender].messages.unshift({ ...e.payload, day: 1 });
+    }
+  });
+
+  return {
+    cash: 10000000, // $100,000.00
+    turn: 1,
+    day: 1,
+    hype: 0,
+    karma: 0,
+    threads: initialThreads,
+    forumPosts: INITIAL_EVENTS.filter(e => e.day === 1 && e.type === 'POST').map(e => e.payload),
+    eventQueue: INITIAL_EVENTS,
+    holdings: {
+      '$GAME': 0,
+      '$POPC': 0,
+      '$APE': 0,
+    } as Record<StockTicker, number>,
+    optionsHoldings: [] as any[],
+    stocks: {
+      '$GAME': {
+        ticker: '$GAME',
+        currentPrice: INITIAL_STOCKS['$GAME'].price,
+        history: generateHistoricalData(INITIAL_STOCKS['$GAME'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
+      },
+      '$POPC': {
+        ticker: '$POPC',
+        currentPrice: INITIAL_STOCKS['$POPC'].price,
+        history: generateHistoricalData(INITIAL_STOCKS['$POPC'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
+      },
+      '$APE': {
+        ticker: '$APE',
+        currentPrice: INITIAL_STOCKS['$APE'].price,
+        history: generateHistoricalData(INITIAL_STOCKS['$APE'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
+      },
+    } as Record<StockTicker, StockData>,
+    gameStatus: 'playing' as const,
+    endingType: null as EndingType | null,
+    lastFlash: null as { type: any; timestamp: number } | null,
+    popups: [] as any[],
+    netWorthHistory: [{ turn: 1, value: 10000000 }], // Start with initial cash
+    tradeHistory: [],
+    costBasis: {
+      '$GAME': 0,
+      '$POPC': 0,
+      '$APE': 0,
+    } as Record<StockTicker, number>,
+  };
+};
 
 export const useGameStore = create<GameStore>()(
   persist(
@@ -267,16 +291,41 @@ export const useGameStore = create<GameStore>()(
       },
 
       buyStock: (ticker, amount) => {
-        const { cash, stocks, holdings, triggerFlash, addPopup } = get();
-        const cost = stocks[ticker].currentPrice * amount;
+        const { cash, stocks, holdings, costBasis, tradeHistory, day, hype, triggerFlash, addPopup } = get();
+        const currentPrice = stocks[ticker].currentPrice;
+        const cost = currentPrice * amount;
 
         if (cash >= cost) {
+          const currentShares = holdings[ticker];
+          const currentBasis = costBasis[ticker];
+          const newShares = currentShares + amount;
+          const newBasis = Math.round((currentShares * currentBasis + amount * currentPrice) / newShares);
+
+          const tradeEntry = {
+            id: Math.random().toString(36).substring(7),
+            type: 'BUY' as const,
+            ticker,
+            amount,
+            price: currentPrice,
+            totalValue: cost,
+            day,
+          };
+
+          // Buying increases hype
+          const newHype = Math.min(100, hype + 5);
+
           set({
             cash: cash - cost,
             holdings: {
               ...holdings,
-              [ticker]: holdings[ticker] + amount,
+              [ticker]: newShares,
             },
+            costBasis: {
+              ...costBasis,
+              [ticker]: newBasis,
+            },
+            tradeHistory: [tradeEntry, ...tradeHistory],
+            hype: newHype,
           });
           triggerFlash('positive');
           const phrases = ['TO THE MOON!', 'LFG!', '🚀🚀🚀', 'BOUGHT!'];
@@ -290,24 +339,40 @@ export const useGameStore = create<GameStore>()(
       },
 
       buyOption: (ticker, type, amount, strikePrice, greeks) => {
-        const { cash, stocks, day, triggerFlash, addPopup } = get();
+        const { cash, stocks, day, tradeHistory, hype, triggerFlash, addPopup } = get();
         const premiumPerUnit = calculateOptionPrice(stocks[ticker].currentPrice, strikePrice, type);
         const totalCost = premiumPerUnit * amount;
 
         if (cash >= totalCost) {
+          const tradeId = Math.random().toString(36).substring(7);
           const newOption = {
-            id: Math.random().toString(36).substring(7),
+            id: tradeId,
             ticker,
             type,
             strikePrice,
             amount,
-            expiryDay: day + 10,
+            expiryDay: day + 1, // 1DTE
+            premiumPaid: totalCost,
             ...greeks,
           };
+
+          const tradeEntry = {
+            id: tradeId,
+            type: 'OPTION_BUY' as const,
+            ticker,
+            amount,
+            price: premiumPerUnit,
+            totalValue: totalCost,
+            day,
+          };
+
+          const newHype = Math.min(100, hype + 8); // Options are more hype
 
           set((state) => ({
             cash: state.cash - totalCost,
             optionsHoldings: [...state.optionsHoldings, newOption],
+            tradeHistory: [tradeEntry, ...state.tradeHistory],
+            hype: newHype,
           }));
 
           triggerFlash('positive');
@@ -319,13 +384,27 @@ export const useGameStore = create<GameStore>()(
       },
 
       sellOption: (optionId, amount) => {
-        const { cash, stocks, optionsHoldings, triggerFlash, addPopup } = get();
+        const { cash, stocks, optionsHoldings, tradeHistory, day, triggerFlash, addPopup } = get();
         const option = optionsHoldings.find(o => o.id === optionId);
         
         if (option && option.amount >= amount) {
           const currentPrice = stocks[option.ticker].currentPrice;
           const marketValuePerUnit = calculateOptionPrice(currentPrice, option.strikePrice, option.type);
           const revenue = marketValuePerUnit * amount;
+          
+          const costBasisPerUnit = option.premiumPaid / option.amount;
+          const realizedPL = (marketValuePerUnit - costBasisPerUnit) * amount;
+
+          const tradeEntry = {
+            id: Math.random().toString(36).substring(7),
+            type: 'OPTION_SELL' as const,
+            ticker: option.ticker,
+            amount,
+            price: marketValuePerUnit,
+            totalValue: revenue,
+            day,
+            realizedPL,
+          };
 
           const updatedOptions = optionsHoldings.map(o => {
             if (o.id === optionId) {
@@ -337,6 +416,7 @@ export const useGameStore = create<GameStore>()(
           set({
             cash: cash + revenue,
             optionsHoldings: updatedOptions,
+            tradeHistory: [tradeEntry, ...tradeHistory],
           });
 
           triggerFlash('positive');
@@ -363,16 +443,31 @@ export const useGameStore = create<GameStore>()(
       },
 
       sellStock: (ticker, amount) => {
-        const { cash, stocks, holdings, triggerFlash, addPopup } = get();
+        const { cash, stocks, holdings, costBasis, tradeHistory, day, triggerFlash, addPopup } = get();
         
         if (holdings[ticker] >= amount) {
-          const revenue = stocks[ticker].currentPrice * amount;
+          const currentPrice = stocks[ticker].currentPrice;
+          const revenue = currentPrice * amount;
+          const realizedPL = (currentPrice - costBasis[ticker]) * amount;
+
+          const tradeEntry = {
+            id: Math.random().toString(36).substring(7),
+            type: 'SELL' as const,
+            ticker,
+            amount,
+            price: currentPrice,
+            totalValue: revenue,
+            day,
+            realizedPL,
+          };
+
           set({
             cash: cash + revenue,
             holdings: {
               ...holdings,
               [ticker]: holdings[ticker] - amount,
             },
+            tradeHistory: [tradeEntry, ...tradeHistory],
           });
           triggerFlash('positive');
           const phrases = ['PAPER HANDS!', 'SECURED!', 'SOLD!', '💎 🙌?'];
@@ -385,24 +480,51 @@ export const useGameStore = create<GameStore>()(
         }
       },
 
+      setThreadRead: (sender) => {
+        const { threads, day } = get();
+        if (threads[sender]) {
+          set({
+            threads: {
+              ...threads,
+              [sender]: {
+                ...threads[sender],
+                lastReadDay: day,
+              },
+            },
+          });
+        }
+      },
+
       processEvents: () => {
-        const { day, eventQueue, messages, forumPosts } = get();
+        const { day, eventQueue, threads, forumPosts } = get();
         const currentEvents = eventQueue.filter((e) => e.day === day);
         
-        if (currentEvents.length === 0) return { newMessages: messages, newForumPosts: forumPosts };
+        if (currentEvents.length === 0) return { newThreads: threads, newForumPosts: forumPosts };
 
-        const newMessages = [...messages];
+        const newThreads = { ...threads };
         const newForumPosts = [...forumPosts];
 
         currentEvents.forEach((event) => {
           if (event.type === 'MESSAGE' || event.type === 'GURU') {
-            newMessages.unshift(event.payload);
+            const sender = event.payload.sender;
+            if (!newThreads[sender]) {
+              newThreads[sender] = {
+                contactName: sender,
+                avatar: '👤',
+                lastReadDay: day - 1,
+                messages: [],
+              };
+            }
+            newThreads[sender].messages = [
+              { ...event.payload, day: event.day },
+              ...newThreads[sender].messages,
+            ];
           } else if (event.type === 'POST') {
             newForumPosts.unshift(event.payload);
           }
         });
 
-        return { newMessages, newForumPosts };
+        return { newThreads, newForumPosts };
       },
 
       nextTurn: () => {
@@ -446,12 +568,26 @@ export const useGameStore = create<GameStore>()(
         let settlementCash = 0;
         const expiringOptions = optionsHoldings.filter(o => o.expiryDay === nextDayNum);
         const remainingOptions = optionsHoldings.filter(o => o.expiryDay !== nextDayNum);
+        const newTradeEntries: any[] = [];
 
         expiringOptions.forEach(option => {
           const finalPrice = nextStocks[option.ticker].currentPrice;
           let payoff = 0;
           if (option.type === 'CALL') payoff = Math.max(0, Math.floor(finalPrice - option.strikePrice)) * option.amount;
           else payoff = Math.max(0, Math.floor(option.strikePrice - finalPrice)) * option.amount;
+
+          const realizedPL = payoff - option.premiumPaid;
+
+          newTradeEntries.push({
+            id: Math.random().toString(36).substring(7),
+            type: 'OPTION_EXPIRY' as const,
+            ticker: option.ticker,
+            amount: option.amount,
+            price: payoff / option.amount,
+            totalValue: payoff,
+            day: nextDayNum,
+            realizedPL,
+          });
 
           if (payoff > 0) {
             settlementCash += payoff;
@@ -484,7 +620,19 @@ export const useGameStore = create<GameStore>()(
 
         const netWorth = nextCash + stockValue + optionsValue;
         let newKarma = karma;
-        const { newMessages, newForumPosts } = processEvents();
+
+        // --- HYPE LOGIC ---
+        let newHype = get().hype;
+        if (prevNetWorth > 0) {
+          const nwChange = Math.abs((netWorth - prevNetWorth) / prevNetWorth);
+          // High volatility in net worth increases hype
+          if (nwChange > 0.1) newHype += Math.min(20, Math.floor(nwChange * 50));
+        }
+        // Daily decay
+        newHype = Math.max(0, newHype - 10);
+        if (newHype > 100) newHype = 100;
+
+        const { newThreads, newForumPosts } = processEvents();
 
         // 6. Generate Dynamic Social Content for the NEXT turn
         const tickers: StockTicker[] = ['$GAME', '$POPC', '$APE'];
@@ -502,7 +650,48 @@ export const useGameStore = create<GameStore>()(
           ? [`My charts say ${predictionTicker} breakout tomorrow. 🚀`, `Whales accumulating ${predictionTicker}.`, `${predictionTicker} bullish cross.`, `Tip: ${predictionTicker} to the moon!`, `Ignore FUD, ${predictionTicker} is UP.`]
           : [`${predictionTicker} looking weak. 📉`, `Massive dump coming for ${predictionTicker}.`, `Stay away from ${predictionTicker}.`, `SELL ${predictionTicker}!`, `Bear flag on ${predictionTicker}.` ];
 
-        const guruMessage = { id: `guru-${nextTurnNum}`, sender: 'Crypto Guru', text: guruPhrases[Math.floor(Math.random() * guruPhrases.length)] };
+        const guruMessage = { 
+          id: `guru-${nextTurnNum}`, 
+          sender: 'Crypto Guru', 
+          text: guruPhrases[Math.floor(Math.random() * guruPhrases.length)],
+          day: nextDayNum
+        };
+
+        if (newThreads['Crypto Guru']) {
+          newThreads['Crypto Guru'].messages = [guruMessage, ...newThreads['Crypto Guru'].messages];
+        }
+
+        // WIFE SENTIMENT
+        const performance = netWorth / 10000000; // relative to starting $100k
+        let wifeText = "Hope you're having a good day at 'work', honey!";
+        if (performance > 1.2) {
+          const positives = [
+            "Honey, I'm so proud of you! I'm looking at houses in the Hamptons.",
+            "Did you see that new Tesla? I think it would look great in our driveway.",
+            "I told my mom you're a financial genius. Don't make me a liar!",
+            "Dinner is on me tonight! (Well, technically on your gains lol)"
+          ];
+          wifeText = positives[Math.floor(Math.random() * positives.length)];
+        } else if (performance < 0.8) {
+          const negatives = [
+            "I saw the bank account. Please tell me it's a mistake.",
+            "The mortgage check bounced. What is going on??",
+            "My sister said she saw you looking at 'loss porn' on Reddit. What does that even mean?",
+            "We need to talk. Now."
+          ];
+          wifeText = negatives[Math.floor(Math.random() * negatives.length)];
+        }
+
+        const wifeMessage = {
+          id: `wife-day-${nextDayNum}`,
+          sender: 'Wife',
+          text: wifeText,
+          day: nextDayNum
+        };
+
+        if (newThreads['Wife']) {
+          newThreads['Wife'].messages = [wifeMessage, ...newThreads['Wife'].messages];
+        }
 
         // FORUM
         const dailyForumPosts: any[] = [];
@@ -552,9 +741,11 @@ export const useGameStore = create<GameStore>()(
           stocks: nextStocks,
           optionsHoldings: remainingOptions,
           karma: newKarma,
-          messages: [guruMessage, ...newMessages],
+          hype: newHype,
+          threads: newThreads,
           forumPosts: [...dailyForumPosts, ...newForumPosts],
           netWorthHistory: [...state.netWorthHistory, { turn: nextTurnNum, value: netWorth }],
+          tradeHistory: [...newTradeEntries, ...state.tradeHistory],
         }));
         
         triggerFlash('neutral');

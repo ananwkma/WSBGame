@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Thread } from '../../../store/types';
+import type { Thread } from '../../../store/types';
 
 interface MessageThreadProps {
   thread: Thread;

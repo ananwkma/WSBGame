@@ -54,6 +54,8 @@ Output: Updated Zustand store with trade history and cost basis logic.
   <files>src/store/types.ts</files>
   <action>
     - Define `TradeType` union: 'BUY' | 'SELL' | 'OPTION_BUY' | 'OPTION_SELL' | 'OPTION_EXPIRY'.
+    - Update `OptionContract` interface:
+      - Add `premiumPaid: number` (total premium paid for the contract in cents).
     - Define `TradeEntry` interface:
       - id: string
       - type: TradeType

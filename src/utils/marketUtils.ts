@@ -34,3 +34,26 @@ export const generateHistoricalData = (
 
   return history.reverse();
 };
+
+/**
+ * Formats a value in cents into a USD currency string.
+ * @param cents The amount in cents.
+ * @returns A formatted string like "$12.34"
+ */
+export const formatCurrency = (cents: number): string => {
+  return `$${(Math.abs(cents) / 100).toLocaleString(undefined, { 
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+};
+
+/**
+ * Calculates the percentage change between two values.
+ * @param current Current value
+ * @param previous Previous value
+ * @returns Percentage change (e.g., 5.25 for 5.25%)
+ */
+export const calculatePercentChange = (current: number, previous: number): number => {
+  if (previous === 0) return 0;
+  return ((current - previous) / previous) * 100;
+};

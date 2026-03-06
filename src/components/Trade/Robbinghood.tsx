@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useGameStore } from '../../store/useGameStore';
+import { useGameStore, calculateOptionPrice } from '../../store/useGameStore';
 import type { StockTicker } from '../../store/types';
 import { PriceChart } from './PriceChart';
 import { SwipeConfirm } from './SwipeConfirm';
@@ -28,6 +28,17 @@ export const Robbinghood: React.FC = () => {
   const netWorth = getNetWorth();
   const currentPrice = selectedStock ? stocks[selectedStock].currentPrice : 0;
   
+  // Live chart history (moved to top level to avoid conditional hook call)
+  const liveNetWorthHistory = useMemo(() => {
+    const history = [...netWorthHistory];
+    const lastPoint = history[history.length - 1];
+    // Only add a live point if it's actually ahead in time
+    if (!lastPoint || lastPoint.turn < day + 0.5) {
+      history.push({ turn: day + 0.5, value: netWorth });
+    }
+    return history;
+  }, [netWorthHistory, day, netWorth]);
+
   // Daily performance
   const dailyPerformance = useMemo(() => {
     if (netWorthHistory.length < 2) return { value: 0, percent: 0 };
@@ -133,15 +144,7 @@ export const Robbinghood: React.FC = () => {
 
             <div className="chart-container" style={{ width: '100%', height: '100px', backgroundColor: '#2b2b26', margin: '12px 0', border: '2px solid #706b66' }}>
                <PriceChart 
-                 history={useMemo(() => {
-                   const history = [...netWorthHistory];
-                   const lastPoint = history[history.length - 1];
-                   // Only add a live point if it's actually ahead in time
-                   if (!lastPoint || lastPoint.turn < day + 0.5) {
-                     history.push({ turn: day + 0.5, value: netWorth });
-                   }
-                   return history;
-                 }, [netWorthHistory, day, netWorth])} 
+                 history={liveNetWorthHistory} 
                  width={300} 
                  height={100} 
                />

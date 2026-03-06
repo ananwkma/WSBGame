@@ -1,5 +1,5 @@
 import React from 'react';
-import { Thread } from '../../../store/types';
+import type { Thread } from '../../../store/types';
 
 interface MessageListProps {
   threads: Thread[];

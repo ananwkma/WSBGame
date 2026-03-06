@@ -25,10 +25,11 @@ export const GuruTube: React.FC = () => {
   const [frame, setFrame] = useState(0);
   const [chatMessages, setChatMessages] = useState<{user: string, text: string, id: number}[]>([]);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const messages = useGameStore((state) => state.messages);
+  const threads = useGameStore((state) => state.threads);
   
-  // Find the most recent guru message (which now contains dynamic predictions)
-  const advice = messages.find(m => m.sender === 'Crypto Guru')?.text || "DIAMOND HANDS ONLY! 💎🙌";
+  // Find the most recent guru message from the dedicated thread
+  const guruThread = threads['Crypto Guru'];
+  const advice = guruThread?.messages[0]?.text || "DIAMOND HANDS ONLY! 💎🙌";
 
   useEffect(() => {
     const interval = setInterval(() => setFrame(f => (f === 0 ? 1 : 0)), 500); // 2fps

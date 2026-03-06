@@ -7,41 +7,28 @@
 - [x] **Phase 4: Polish & Endings** - Final narrative outcomes, save state, and juice.
 - [x] **Phase 5: Advanced Trading & Dynamic Social** - Options trading, UI enhancements, and reactive social layer.
 - [x] **Phase 6: Options Chains & Portfolio Analytics** - High-fidelity options, portfolio tracking, and visual overhaul.
-- [ ] **Phase 7: History Tab & Performance Indicators** - Trade ledger, cost basis, and color-coded gain/loss feedback.
+- [x] **Phase 7: History Tab & Performance Indicators** - Trade ledger, cost basis, and color-coded gain/loss feedback.
+- [x] **Phase 8: Messaging Overhaul & Chart Fix** - Threaded messaging, unread indicators, dynamic Wife dialogue, and fixing the chart line color bug.
 
 ## Phase Details
 
-### Phase 6: Options Chains & Portfolio Analytics
-**Goal**: Implement high-fidelity options chains, portfolio tracking, and visual chart overhaul.
-**Depends on**: Phase 5
-**Requirements**: TRADE-09, TRADE-10, VIS-06, VIS-07
+### Phase 8: Messaging Overhaul & Chart Fix
+**Goal**: Overhaul the social layer into a modern threaded messaging app and fix the persistent green chart bug.
+**Depends on**: Phase 7
+**Requirements**: NARR-04, NARR-05, VIS-08
 **Success Criteria**:
-  1. Options UI displays a chain of ITM, OTM, and Far OTM contracts with "made up" Greeks.
-  2. All options are 1DTE and settle automatically the next day.
-  3. Portfolio Net Worth accurately includes the market value of active options.
-  4. Robbinghood homepage features a "Net Worth" performance line chart.
-  5. All charts use diagonal lines (linear) instead of stair-steps.
-  6. Charts are pre-populated with arbitrary historical data.
+  1. Net Worth chart turns red correctly when daily performance is negative.
+  2. Messaging app features a contact list with avatars, previews, and unread badges.
+  3. Clicking a contact opens a full thread view with a "New Messages" separator line.
+  4. Contacts are auto-sorted with the most recent activity at the top.
+  5. The "Wife" character sends daily messages that react dynamically to the player's Net Worth (Starting: $100k).
 **Plans**:
-- [x] 6-01-PLAN.md — Options Chain Logic & Market Value.
-- [x] 6-02-PLAN.md — Visual Overhaul: Diagonal Charts & Pre-population.
-- [x] 6-03-PLAN.md — UI: Portfolio Graph & Options Chain.
-
-### Phase 7: History Tab & Performance Indicators
-**Goal**: Implement a complete trade ledger and provide real-time performance feedback across the UI.
-**Depends on**: Phase 6
-**Requirements**: TRADE-09, TRADE-10, TRADE-11
-**Success Criteria**:
-  1. A 'History' tab in Robbinghood displays a scrollable list of all past trades (BUY/SELL/EXPIRY).
-  2. The main portfolio screen shows "Daily Change" in both dollar amount and percentage (green/red).
-  3. Every stock in the market list shows its 24h (1 turn) percentage change.
-  4. Active holdings show total unrealized gain/loss percentage based on average cost basis.
-**Plans**:
-- [ ] 7-01-PLAN.md — State: Trade Ledger & Cost Basis Logic.
-- [ ] 7-02-PLAN.md — UI: Performance Indicators & Color-coded Feedback.
-- [ ] 7-03-PLAN.md — UI: History Tab & Expiry Logging.
+- [x] 8-01-PLAN.md — Fix: PriceChart Color Logic & Duplicate Values.
+- [x] 8-02-PLAN.md — State: Threaded Messaging & Wife Sentiment Engine.
+- [x] 8-03-PLAN.md — UI: Contact List & Thread Detail View.
 
 ## Progress Table
+
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -51,4 +38,6 @@
 | 4: Polish & Endings | 2/2 | Completed | 2026-03-05 |
 | 5: Advanced Trading | 3/3 | Completed | 2026-03-05 |
 | 6: Options Chains | 3/3 | Completed | 2026-03-05 |
-| 7: History & Perf | 0/3 | Not started | - |
+| 7: History & Perf | 3/3 | Completed | 2026-03-06 |
+| 8: Messaging & Chart | 3/3 | Completed | 2026-03-06 |
+

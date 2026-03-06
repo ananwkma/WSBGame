@@ -20,9 +20,15 @@ export const PhoneApp: React.FC = () => {
     >
       <div className="phone-app-header">
         <span>PHONE v1.0</span>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <span>📶</span>
-          <span>🔋 100%</span>
+          <div className="battery-container">
+            <div className="battery-body">
+              <div className="battery-fill" style={{ width: '5%' }}></div>
+            </div>
+            <div className="battery-tip"></div>
+            <span className="battery-text">5%</span>
+          </div>
         </div>
       </div>
 
