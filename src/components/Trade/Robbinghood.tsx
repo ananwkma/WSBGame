@@ -178,7 +178,9 @@ export const Robbinghood: React.FC = () => {
                     <span className="ticker" style={{ color: opt.type === 'CALL' ? '#94ba8b' : '#ba8b8b' }}>
                       {opt.ticker} {opt.type} {formatCurrency(opt.strikePrice)}
                     </span>
-                    <div className="price" style={{ fontSize: '10px', color: '#a89f8c' }}>{opt.amount} ctrs (Exp Day {opt.expiryDay})</div>
+                    <div className="price" style={{ fontSize: '10px', color: '#a89f8c' }}>
+                      {opt.amount} ctrs (Exp Day {opt.expiryDay}) • IV: {(stocks[opt.ticker].iv * 100).toFixed(0)}%
+                    </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div className="price">
@@ -234,6 +236,11 @@ export const Robbinghood: React.FC = () => {
                        )} 
                        showAmount={false} 
                      />
+                   )}
+                   {selectedStock && (
+                     <span style={{ fontSize: '12px', color: '#a89f8c', marginLeft: 'auto', fontWeight: 'bold' }}>
+                       IV: {(stocks[selectedStock].iv * 100).toFixed(0)}%
+                     </span>
                    )}
                  </div>
                  
