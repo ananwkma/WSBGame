@@ -9,6 +9,7 @@
 - [x] **Phase 6: Options Chains & Portfolio Analytics** - High-fidelity options, portfolio tracking, and visual overhaul.
 - [x] **Phase 7: History Tab & Performance Indicators** - Trade ledger, cost basis, and color-coded gain/loss feedback.
 - [x] **Phase 8: Messaging Overhaul & Chart Fix** - Threaded messaging, unread indicators, dynamic Wife dialogue, and fixing the chart line color bug.
+- [ ] **Phase 9: Accurate Options Engine** - Implement Black-Scholes model, updated Greeks, and IV dynamics (IV Crush).
 
 ## Phase Details
 
@@ -27,6 +28,21 @@
 - [x] 8-02-PLAN.md — State: Threaded Messaging & Wife Sentiment Engine.
 - [x] 8-03-PLAN.md — UI: Contact List & Thread Detail View.
 
+### Phase 9: Accurate Options Engine
+**Goal**: Replace the simplified options pricing model with a mathematically consistent Black-Scholes implementation.
+**Depends on**: Phase 8
+**Requirements**: TRADE-09, TRADE-10, TRADE-11, TRADE-12
+**Success Criteria**:
+  1. Options premiums calculated via Black-Scholes approximation.
+  2. Greeks (Delta, Gamma, Theta, Vega) updated based on the new model.
+  3. Each stock has a dynamic Implied Volatility (IV) value.
+  4. "IV Crush" logic implemented for narrative-driven volatility spikes/drops.
+  5. UI updated to display IV and Vega for better player visibility.
+**Plans**:
+- [x] 09-01-PLAN.md — Logic: Black-Scholes Engine & Normal CDF.
+- [x] 09-02-PLAN.md — State: Dynamic IV & IV Crush Logic.
+- [ ] 09-03-PLAN.md — UI: IV Indicators & Vega Display.
+
 ## Progress Table
 
 
@@ -40,4 +56,4 @@
 | 6: Options Chains | 3/3 | Completed | 2026-03-05 |
 | 7: History & Perf | 3/3 | Completed | 2026-03-06 |
 | 8: Messaging & Chart | 3/3 | Completed | 2026-03-06 |
-
+| 9: Options Engine | 2/3 | In Progress | |

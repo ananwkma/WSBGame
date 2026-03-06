@@ -1,5 +1,13 @@
 # Project State
 
+## Phase 9: Accurate Options Engine (In Progress)
+- [x] **09-01: Black-Scholes Engine & Normal CDF**
+  - [x] Implemented `calculateBS` function in `marketUtils.ts`.
+  - [x] Updated `calculateOptionPrice` and Greek calculations to use the new engine.
+- [x] **09-02: Dynamic IV & IV Crush Logic**
+  - [x] Implemented turn-based IV dynamics in `useGameStore.ts`.
+  - [x] Added IV spikes before SHIFT events and IV Crush on the day of the event.
+
 ## Completed Phases
 - [x] **Phase 1: Core Shell & Visual Filter**
 - [x] **Phase 2: Trading Engine & UI**
@@ -9,18 +17,13 @@
 - [x] **Phase 6: Options Chains & Portfolio Analytics**
 - [x] **Phase 7: History Tab & Performance Indicators**
 - [x] **Phase 8: Messaging Overhaul & Chart Fix**
-  - [x] **Chart Fix**: Net Worth chart now colors correctly relative to starting capital.
-  - [x] **Threaded Messaging**: Refactored simple message list into a full threaded interface with contacts and history.
-  - [x] **Unread Badges**: Implemented unread indicators and a "New Messages" separator in threads.
-  - [x] **Wife Sentiment**: Added a dynamic dialogue engine for the "Wife" character that reacts to financial performance.
 
 ## Recent Changes
-- Overhauled `PriceChart` color logic to compare current value against initial history point.
-- Memoized history filtering in `Robbinghood` to prevent duplicate turn indices.
-- Transitioned store from flat `messages` to `threads: Record<string, Thread>`.
-- Created `MessageList` and `MessageThread` components for a modern messaging UX.
-- Implemented `setThreadRead` and unread badge logic in `ChatApp`.
-- Integrated dynamic Wife messaging into the `nextTurn` state transition.
+- Implemented dynamic Implied Volatility (IV) in the game store.
+- IV now spikes 1-2 turns before major SHIFT events to simulate market anticipation.
+- IV resets to base levels (IV Crush) immediately when the SHIFT event occurs.
+- IV decays slowly (10% per turn) towards base level during periods of low activity.
+- Options premiums now correctly reflect volatility changes via the Black-Scholes model.
 
 ## Current Focus
-- Phase 8 complete. Ready for final balancing or expansion.
+- Phase 09, Wave 3: UI indicators for IV and Vega.
