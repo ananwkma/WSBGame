@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
 import type { StockTicker } from '../../store/types';
 import { PriceChart } from './PriceChart';
 import { SwipeConfirm } from './SwipeConfirm';
+import { OptionsChain } from './OptionsChain';
 import './Robbinghood.css';
 
 type Tab = 'Portfolio' | 'Trade' | 'History';
@@ -13,18 +14,19 @@ export const Robbinghood: React.FC = () => {
   const [selectedStock, setSelectedStock] = useState<StockTicker | null>(null);
   const [tradeAmount, setTradeAmount] = useState<number>(1);
   const [tradeMode, setTradeMode] = useState<'STOCK' | 'OPTION'>('STOCK');
-  const [optionType, setOptionType] = useState<'CALL' | 'PUT'>('CALL');
-  const { cash, holdings, stocks, nextTurn, buyStock, sellStock, buyOption } = useGameStore();
+  const [selectedOptionData, setSelectedOptionData] = useState<any>(null);
+  const { cash, holdings, stocks, nextTurn, buyStock, sellStock, buyOption, getNetWorth, netWorthHistory, optionsHoldings } = useGameStore();
 
-  const totalAssets = Object.entries(holdings).reduce((total, [ticker, amount]) => {
-    return total + (stocks[ticker as StockTicker].currentPrice * amount);
-  }, 0);
-
-  const netWorth = cash + totalAssets;
+  const netWorth = getNetWorth();
 
   const currentPrice = selectedStock ? stocks[selectedStock].currentPrice : 0;
-  const premiumPerUnit = Math.floor(currentPrice * 0.1);
-  const costPerUnit = tradeMode === 'STOCK' ? currentPrice : premiumPerUnit;
+  
+  const costPerUnit = useMemo(() => {
+    if (tradeMode === 'STOCK') return currentPrice;
+    if (selectedOptionData) return selectedOptionData.premium;
+    return 0;
+  }, [tradeMode, currentPrice, selectedOptionData]);
+
   const totalCost = tradeAmount * costPerUnit;
 
   const formatCurrency = (cents: number) => {
@@ -35,8 +37,18 @@ export const Robbinghood: React.FC = () => {
     if (selectedStock) {
       if (tradeMode === 'STOCK') {
         buyStock(selectedStock, tradeAmount);
-      } else {
-        buyOption(selectedStock, optionType, tradeAmount);
+      } else if (selectedOptionData) {
+        buyOption(
+          selectedStock, 
+          selectedOptionData.type, 
+          tradeAmount, 
+          selectedOptionData.strikePrice,
+          {
+            delta: selectedOptionData.delta,
+            gamma: selectedOptionData.gamma,
+            theta: selectedOptionData.theta
+          }
+        );
       }
     }
   };
@@ -98,20 +110,41 @@ export const Robbinghood: React.FC = () => {
               <div className="robbinghood-label">Buying Power</div>
               <div className="robbinghood-value">{formatCurrency(cash)}</div>
             </div>
+
+            <div className="chart-container" style={{ width: '100%', height: '100px', backgroundColor: '#2b2b26', margin: '12px 0', border: '2px solid #706b66' }}>
+               <PriceChart 
+                 history={netWorthHistory} 
+                 width={300} 
+                 height={100} 
+                 color="#94ba8b" // Palette: green
+               />
+            </div>
             
-            <div className="robbinghood-label" style={{ marginTop: '20px', display: 'block' }}>Holdings</div>
+            <div className="robbinghood-label" style={{ marginTop: '12px', display: 'block' }}>Holdings</div>
             <ul className="robbinghood-list">
               {Object.entries(holdings).map(([ticker, amount]) => {
                 if (amount === 0) return null;
                 const price = stocks[ticker as StockTicker].currentPrice;
                 return (
                   <li key={ticker} className="robbinghood-list-item" onClick={() => { setActiveTab('Trade'); setSelectedStock(ticker as StockTicker); }} style={{ cursor: 'pointer' }}>
-                    <span className="ticker">{ticker} ({amount} shares)</span>
+                    <span className="ticker">{ticker}</span>
+                    <span className="price" style={{ fontSize: '10px', color: '#a89f8c' }}>{amount} shares</span>
                     <span className="price">{formatCurrency(price * amount)}</span>
                   </li>
                 );
               })}
-              {Object.values(holdings).every(v => v === 0) && (
+              {optionsHoldings.map((opt) => (
+                <li key={opt.id} className="robbinghood-list-item">
+                  <span className="ticker" style={{ color: opt.type === 'CALL' ? '#94ba8b' : '#ba8b8b' }}>
+                    {opt.ticker} {opt.type} {formatCurrency(opt.strikePrice)}
+                  </span>
+                  <span className="price" style={{ fontSize: '10px', color: '#a89f8c' }}>{opt.amount} ctrs (Exp Day {opt.expiryDay})</span>
+                  <span className="price">
+                    {formatCurrency(opt.amount * (stocks[opt.ticker as StockTicker].currentPrice * 0.1))} {/* Simplified market value for UI */}
+                  </span>
+                </li>
+              ))}
+              {Object.values(holdings).every(v => v === 0) && optionsHoldings.length === 0 && (
                 <li className="robbinghood-list-item" style={{ color: '#706b66', fontSize: '12px' }}>
                   No holdings yet. Buy some stocks!
                 </li>
@@ -136,7 +169,7 @@ export const Robbinghood: React.FC = () => {
                </>
              ) : (
                <div className="stock-details">
-                 <button className="back-btn" onClick={() => setSelectedStock(null)}>← BACK</button>
+                 <button className="back-btn" onClick={() => { setSelectedStock(null); setSelectedOptionData(null); }}>← BACK</button>
                  <h2 style={{ margin: '8px 0' }}>{selectedStock}</h2>
                  <div className="chart-container" style={{ width: '100%', height: '120px', backgroundColor: '#2b2b26', marginBottom: '16px', border: '2px solid #706b66' }}>
                     <PriceChart 
@@ -149,10 +182,10 @@ export const Robbinghood: React.FC = () => {
                  <div className="trade-controls">
                     <div style={{ marginBottom: '16px' }}>
                       <div className="robbinghood-label">Mode: {tradeMode}</div>
-                      <div className="toggle-group">
+                      <div className="toggle-group" style={{ marginBottom: '12px' }}>
                         <button 
                           className={`toggle-btn ${tradeMode === 'STOCK' ? 'active' : ''}`}
-                          onClick={() => { setTradeMode('STOCK'); setTradeAmount(1); }}
+                          onClick={() => { setTradeMode('STOCK'); setTradeAmount(1); setSelectedOptionData(null); }}
                         >
                           STOCK
                         </button>
@@ -165,26 +198,11 @@ export const Robbinghood: React.FC = () => {
                       </div>
 
                       {tradeMode === 'OPTION' && (
-                        <>
-                          <div className="robbinghood-label">Type: {optionType}</div>
-                          <div className="toggle-group">
-                            <button 
-                              className={`toggle-btn ${optionType === 'CALL' ? 'active' : ''}`}
-                              onClick={() => setOptionType('CALL')}
-                            >
-                              CALL
-                            </button>
-                            <button 
-                              className={`toggle-btn ${optionType === 'PUT' ? 'active' : ''}`}
-                              onClick={() => setOptionType('PUT')}
-                            >
-                              PUT
-                            </button>
-                          </div>
-                          <div className="robbinghood-label" style={{ fontSize: '10px' }}>
-                            STRIKE: {formatCurrency(currentPrice)} | PREMIUM: {formatCurrency(premiumPerUnit)}
-                          </div>
-                        </>
+                        <OptionsChain 
+                          ticker={selectedStock} 
+                          selectedOption={selectedOptionData ? { strike: selectedOptionData.strikePrice, type: selectedOptionData.type } : null}
+                          onSelect={setSelectedOptionData}
+                        />
                       )}
                     </div>
 
@@ -214,8 +232,10 @@ export const Robbinghood: React.FC = () => {
                         <button 
                           className="all-in-btn"
                           onClick={() => {
-                            const affordable = Math.floor(cash / costPerUnit);
-                            setTradeAmount(Math.max(1, affordable));
+                            if (costPerUnit > 0) {
+                              const affordable = Math.floor(cash / costPerUnit);
+                              setTradeAmount(Math.max(1, affordable));
+                            }
                           }}
                         >
                           ALL IN
@@ -233,7 +253,11 @@ export const Robbinghood: React.FC = () => {
                           <SwipeConfirm label={`SWIPE TO SELL ${tradeAmount} SHARES`} onConfirm={handleSell} />
                         </>
                       ) : (
-                        <SwipeConfirm label={`SWIPE TO BUY ${tradeAmount} ${optionType}S`} onConfirm={handleBuy} />
+                        <SwipeConfirm 
+                          label={selectedOptionData ? `SWIPE TO BUY ${tradeAmount} ${selectedOptionData.type}S` : 'SELECT AN OPTION'} 
+                          onConfirm={handleBuy} 
+                          disabled={!selectedOptionData}
+                        />
                       )}
                     </div>
                  </div>

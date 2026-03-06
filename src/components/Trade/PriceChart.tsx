@@ -3,32 +3,35 @@ import { line, curveLinear } from 'd3-shape';
 import type { HistoryPoint } from '../../store/types';
 
 interface PriceChartProps {
-  history: HistoryPoint[];
+  history: any[]; // Can be HistoryPoint[] or NetWorthPoint[]
   width: number;
   height: number;
+  color?: string;
 }
 
-export const PriceChart: React.FC<PriceChartProps> = ({ history, width, height }) => {
+export const PriceChart: React.FC<PriceChartProps> = ({ history, width, height, color = '#e0dbcb' }) => {
   const pathData = useMemo(() => {
     if (history.length < 2) return '';
 
-    const minPrice = Math.min(...history.map((p) => p.price));
-    const maxPrice = Math.max(...history.map((p) => p.price));
-    const priceRange = maxPrice - minPrice || 100; // avoid divide by zero
+    const getValue = (p: any) => p.price !== undefined ? p.price : p.value;
+
+    const minVal = Math.min(...history.map(getValue));
+    const maxVal = Math.max(...history.map(getValue));
+    const valRange = maxVal - minVal || 100; // avoid divide by zero
 
     const padding = 10;
     const chartWidth = width - padding * 2;
     const chartHeight = height - padding * 2;
 
     const xScale = (index: number) => padding + (index / (history.length - 1)) * chartWidth;
-    const yScale = (price: number) => {
-      const normalized = (price - minPrice) / priceRange;
+    const yScale = (val: number) => {
+      const normalized = (val - minVal) / valRange;
       return padding + (1 - normalized) * chartHeight;
     };
 
-    const lineGenerator = line<HistoryPoint>()
+    const lineGenerator = line<any>()
       .x((_, i) => xScale(i))
-      .y((p) => yScale(p.price))
+      .y((p) => yScale(getValue(p)))
       .curve(curveLinear);
 
     return lineGenerator(history) || '';
@@ -44,7 +47,7 @@ export const PriceChart: React.FC<PriceChartProps> = ({ history, width, height }
       <path
         d={pathData}
         fill="none"
-        stroke="#e0dbcb" // palette: lightest
+        stroke={color}
         strokeWidth="2"
       />
     </svg>

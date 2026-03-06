@@ -5,21 +5,24 @@ interface SwipeConfirmProps {
   onConfirm: () => void;
   label: string;
   width?: number;
+  disabled?: boolean;
 }
 
 export const SwipeConfirm: React.FC<SwipeConfirmProps> = ({ 
   onConfirm, 
   label, 
-  width = 240 
+  width = 240,
+  disabled = false
 }) => {
   const x = useMotionValue(0);
   const background = useTransform(x, [0, width - 40], ['#706b66', '#e0dbcb']);
   const textColor = useTransform(x, [0, width - 40], ['#e0dbcb', '#2b2b26']);
 
   const handleDragEnd = () => {
-    if (x.get() > width - 60) {
+    if (!disabled && x.get() > width - 60) {
       onConfirm();
     }
+    x.set(0); // Reset after swipe attempt
   };
 
   return (
@@ -35,7 +38,8 @@ export const SwipeConfirm: React.FC<SwipeConfirmProps> = ({
         overflow: 'hidden',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        opacity: disabled ? 0.5 : 1
       }}
     >
       <motion.div 
