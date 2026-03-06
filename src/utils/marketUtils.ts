@@ -1,4 +1,4 @@
-import { HistoryPoint } from '../store/types';
+import type { HistoryPoint } from '../store/types';
 
 /**
  * Generates plausible historical price data using a random walk algorithm.

@@ -9,9 +9,9 @@ interface OptionsChainProps {
 }
 
 export const OptionsChain: React.FC<OptionsChainProps> = ({ ticker, selectedOption, onSelect }) => {
-  const { stocks } = useGameStore();
+  const { stocks, optionsHoldings } = useGameStore();
   const currentPrice = stocks[ticker].currentPrice;
-  const chain = generateOptionsChain(ticker, currentPrice);
+  const chain = generateOptionsChain(ticker, currentPrice, optionsHoldings);
 
   const formatCurrency = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
@@ -35,12 +35,22 @@ export const OptionsChain: React.FC<OptionsChainProps> = ({ ticker, selectedOpti
           const isCallSelected = selectedOption?.strike === strike && selectedOption?.type === 'CALL';
           const isPutSelected = selectedOption?.strike === strike && selectedOption?.type === 'PUT';
 
+          const ownsCall = optionsHoldings.some(o => o.ticker === ticker && o.strikePrice === strike && o.type === 'CALL');
+          const ownsPut = optionsHoldings.some(o => o.ticker === ticker && o.strikePrice === strike && o.type === 'PUT');
+
           return (
             <div key={strike} className="strike-row" style={{ display: 'flex', borderBottom: '1px solid #3d3d38', padding: '4px 0' }}>
               <div 
                 className={`option-cell call ${isCallSelected ? 'selected' : ''}`}
                 onClick={() => onSelect(call)}
-                style={{ flex: 1, textAlign: 'center', cursor: 'pointer', backgroundColor: isCallSelected ? '#3e4a3d' : 'transparent', padding: '2px' }}
+                style={{ 
+                  flex: 1, 
+                  textAlign: 'center', 
+                  cursor: 'pointer', 
+                  backgroundColor: isCallSelected ? '#3e4a3d' : 'transparent', 
+                  border: ownsCall ? '1px solid #94ba8b' : 'none',
+                  padding: '2px' 
+                }}
               >
                 <div className="premium" style={{ fontWeight: 'bold' }}>{call ? formatCurrency(call.premium) : '-'}</div>
                 {call && (
@@ -55,7 +65,14 @@ export const OptionsChain: React.FC<OptionsChainProps> = ({ ticker, selectedOpti
               <div 
                 className={`option-cell put ${isPutSelected ? 'selected' : ''}`}
                 onClick={() => onSelect(put)}
-                style={{ flex: 1, textAlign: 'center', cursor: 'pointer', backgroundColor: isPutSelected ? '#4a3d3d' : 'transparent', padding: '2px' }}
+                style={{ 
+                  flex: 1, 
+                  textAlign: 'center', 
+                  cursor: 'pointer', 
+                  backgroundColor: isPutSelected ? '#4a3d3d' : 'transparent', 
+                  border: ownsPut ? '1px solid #ba8b8b' : 'none',
+                  padding: '2px' 
+                }}
               >
                 <div className="premium" style={{ fontWeight: 'bold' }}>{put ? formatCurrency(put.premium) : '-'}</div>
                 {put && (

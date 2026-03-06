@@ -150,3 +150,79 @@
 .all-in-btn:active {
   background-color: #e0dbcb;
 }
+
+/* Options Chain Styles */
+.options-chain {
+  margin-top: 8px;
+  border: 2px solid #706b66;
+  background-color: #2b2b26;
+  font-size: 10px;
+}
+
+.options-header-row {
+  display: flex;
+  background-color: #706b66;
+  color: #2b2b26;
+  font-weight: bold;
+  padding: 4px 0;
+  text-align: center;
+}
+
+.options-header-row .col {
+  flex: 1;
+}
+
+.strike-row {
+  display: flex;
+  border-bottom: 1px solid #706b66;
+  align-items: center;
+}
+
+.strike-row:last-child {
+  border-bottom: none;
+}
+
+.strike-val {
+  flex: 1;
+  text-align: center;
+  font-weight: bold;
+  background-color: #3d3d36;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.option-cell {
+  flex: 1;
+  padding: 4px;
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.option-cell:hover {
+  background-color: #3d3d36;
+}
+
+.option-cell.selected {
+  background-color: #a89f8c;
+  color: #2b2b26;
+}
+
+.premium {
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.greeks {
+  font-size: 8px;
+  color: #706b66;
+}
+
+.option-cell.selected .greeks {
+  color: #2b2b26;
+}

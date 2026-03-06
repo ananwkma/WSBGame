@@ -4,7 +4,6 @@ import type { GameStore, StockTicker, GameEvent, EndingType, StockData } from '.
 import { generateHistoricalData } from '../utils/marketUtils';
 
 const INITIAL_EVENTS: GameEvent[] = [
-// ... (rest of INITIAL_EVENTS)
   {
     day: 1,
     type: 'MESSAGE',
@@ -152,14 +151,33 @@ export const calculateOptionPrice = (price: number, strike: number, type: 'CALL'
   return Math.max(1, Math.floor(intrinsic + extrinsic));
 };
 
-export const generateOptionsChain = (ticker: StockTicker, currentPrice: number) => {
-  const strikes = [
-    Math.round(currentPrice * 0.9),
-    Math.round(currentPrice * 1.0),
-    Math.round(currentPrice * 1.1),
-  ];
+export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, heldOptions: any[] = []) => {
+  const roundTo = 500; // $5.00 increments
+  
+  // 1. Generate standard OTM strikes
+  const otmStrikes: number[] = [];
+  
+  // 3 OTM Puts (below price)
+  for (let i = 1; i <= 3; i++) {
+    const s = Math.floor((currentPrice - (i * 1000)) / roundTo) * roundTo;
+    if (s > 0) otmStrikes.push(s);
+  }
+  
+  // 3 OTM Calls (above price)
+  for (let i = 1; i <= 3; i++) {
+    const s = Math.ceil((currentPrice + (i * 1000)) / roundTo) * roundTo;
+    otmStrikes.push(s);
+  }
 
-  return strikes.flatMap((strike) => {
+  // 2. Add strikes from held positions for this ticker
+  const heldStrikes = heldOptions
+    .filter(o => o.ticker === ticker)
+    .map(o => o.strikePrice);
+
+  // 3. Unique and sorted
+  const allStrikes = Array.from(new Set([...otmStrikes, ...heldStrikes])).sort((a, b) => a - b);
+
+  return allStrikes.flatMap((strike) => {
     const callPrice = calculateOptionPrice(currentPrice, strike, 'CALL');
     const callGreeks = {
       delta: calculateDelta(currentPrice, strike, 'CALL'),
@@ -283,7 +301,7 @@ export const useGameStore = create<GameStore>()(
             type,
             strikePrice,
             amount,
-            expiryDay: day + 1,
+            expiryDay: day + 10,
             ...greeks,
           };
 
@@ -297,6 +315,35 @@ export const useGameStore = create<GameStore>()(
         } else {
           triggerFlash('negative');
           addPopup('NOT ENOUGH CASH FOR PREMIUM', 'negative');
+        }
+      },
+
+      sellOption: (optionId, amount) => {
+        const { cash, stocks, optionsHoldings, triggerFlash, addPopup } = get();
+        const option = optionsHoldings.find(o => o.id === optionId);
+        
+        if (option && option.amount >= amount) {
+          const currentPrice = stocks[option.ticker].currentPrice;
+          const marketValuePerUnit = calculateOptionPrice(currentPrice, option.strikePrice, option.type);
+          const revenue = marketValuePerUnit * amount;
+
+          const updatedOptions = optionsHoldings.map(o => {
+            if (o.id === optionId) {
+              return { ...o, amount: o.amount - amount };
+            }
+            return o;
+          }).filter(o => o.amount > 0);
+
+          set({
+            cash: cash + revenue,
+            optionsHoldings: updatedOptions,
+          });
+
+          triggerFlash('positive');
+          addPopup('OPTION POSITION CLOSED', 'positive');
+        } else {
+          triggerFlash('negative');
+          addPopup('INVALID SELL AMOUNT', 'negative');
         }
       },
 
@@ -342,7 +389,7 @@ export const useGameStore = create<GameStore>()(
         const { day, eventQueue, messages, forumPosts } = get();
         const currentEvents = eventQueue.filter((e) => e.day === day);
         
-        if (currentEvents.length === 0) return;
+        if (currentEvents.length === 0) return { newMessages: messages, newForumPosts: forumPosts };
 
         const newMessages = [...messages];
         const newForumPosts = [...forumPosts];
@@ -355,33 +402,21 @@ export const useGameStore = create<GameStore>()(
           }
         });
 
-        set({
-          messages: newMessages,
-          forumPosts: newForumPosts,
-        });
+        return { newMessages, newForumPosts };
       },
 
       nextTurn: () => {
         const { turn, day, stocks, eventQueue, cash, holdings, optionsHoldings, karma, triggerFlash, addPopup, processEvents, getNetWorth } = get();
         
-        // Calculate prevNetWorth for social triggers
         const prevNetWorth = getNetWorth();
 
-        // End game check
         if (day >= 10) {
           const finalNetWorth = getNetWorth();
-
           let ending: EndingType = 'MENDYS';
-          if (finalNetWorth >= 100000000) { // $1M
-            ending = 'MOON';
-          } else if (karma >= 50000 || finalNetWorth <= 0) {
-            ending = 'LEGEND';
-          }
+          if (finalNetWorth >= 100000000) ending = 'MOON';
+          else if (karma >= 50000 || finalNetWorth <= 0) ending = 'LEGEND';
 
-          set({ 
-            gameStatus: 'ended',
-            endingType: ending
-          });
+          set({ gameStatus: 'ended', endingType: ending });
           return;
         }
 
@@ -389,23 +424,16 @@ export const useGameStore = create<GameStore>()(
         const nextDayNum = day + 1;
         const nextStocks = { ...stocks };
 
-        // 1. Regular market movement
         (Object.keys(nextStocks) as StockTicker[]).forEach((ticker) => {
           const stock = nextStocks[ticker];
-          const volatility = Math.random() * 0.4 + 0.1; // 10% to 50%
+          const volatility = Math.random() * 0.4 + 0.1;
           const direction = Math.random() > 0.5 ? 1 : -1;
           const change = 1 + (volatility * direction);
-          
           let nextPrice = Math.round(stock.currentPrice * change);
           if (nextPrice < 1) nextPrice = 1;
-          
-          nextStocks[ticker] = {
-            ...stock,
-            currentPrice: nextPrice,
-          };
+          nextStocks[ticker] = { ...stock, currentPrice: nextPrice };
         });
 
-        // 2. Narrative SHIFT events for the new day
         const shifts = eventQueue.filter(e => e.day === nextDayNum && e.type === 'SHIFT');
         shifts.forEach(event => {
           const { ticker, delta } = event.payload;
@@ -415,7 +443,6 @@ export const useGameStore = create<GameStore>()(
           }
         });
 
-        // 3. Options Settlement
         let settlementCash = 0;
         const expiringOptions = optionsHoldings.filter(o => o.expiryDay === nextDayNum);
         const remainingOptions = optionsHoldings.filter(o => o.expiryDay !== nextDayNum);
@@ -423,11 +450,8 @@ export const useGameStore = create<GameStore>()(
         expiringOptions.forEach(option => {
           const finalPrice = nextStocks[option.ticker].currentPrice;
           let payoff = 0;
-          if (option.type === 'CALL') {
-            payoff = Math.max(0, Math.floor(finalPrice - option.strikePrice)) * option.amount;
-          } else {
-            payoff = Math.max(0, Math.floor(option.strikePrice - finalPrice)) * option.amount;
-          }
+          if (option.type === 'CALL') payoff = Math.max(0, Math.floor(finalPrice - option.strikePrice)) * option.amount;
+          else payoff = Math.max(0, Math.floor(option.strikePrice - finalPrice)) * option.amount;
 
           if (payoff > 0) {
             settlementCash += payoff;
@@ -441,7 +465,6 @@ export const useGameStore = create<GameStore>()(
 
         const nextCash = cash + settlementCash;
 
-        // 4. Update history
         (Object.keys(nextStocks) as StockTicker[]).forEach((ticker) => {
           nextStocks[ticker] = {
             ...nextStocks[ticker],
@@ -449,7 +472,6 @@ export const useGameStore = create<GameStore>()(
           };
         });
 
-        // 5. Calculate Net Worth for Social Triggers & History
         const stockValue = (Object.keys(holdings) as StockTicker[]).reduce((total, ticker) => {
           return total + (nextStocks[ticker].currentPrice * holdings[ticker]);
         }, 0);
@@ -461,28 +483,58 @@ export const useGameStore = create<GameStore>()(
         }, 0);
 
         const netWorth = nextCash + stockValue + optionsValue;
-
         let newKarma = karma;
-        let extraForumPosts: any[] = [];
+        const { newMessages, newForumPosts } = processEvents();
 
-        // Dynamic Social Triggers
+        // 6. Generate Dynamic Social Content for the NEXT turn
+        const tickers: StockTicker[] = ['$GAME', '$POPC', '$APE'];
+        const getRandomTicker = () => tickers[Math.floor(Math.random() * tickers.length)];
+
+        // GURU
+        const predictionTicker = getRandomTicker();
+        const nextStockState = nextStocks[predictionTicker];
+        const prevPrice = stocks[predictionTicker].currentPrice;
+        const willMoonGuru = nextStockState.currentPrice > prevPrice;
+        const isRightGuru = Math.random() < 0.7;
+        const adviceMoonGuru = isRightGuru ? willMoonGuru : !willMoonGuru;
+
+        const guruPhrases = adviceMoonGuru 
+          ? [`My charts say ${predictionTicker} breakout tomorrow. 🚀`, `Whales accumulating ${predictionTicker}.`, `${predictionTicker} bullish cross.`, `Tip: ${predictionTicker} to the moon!`, `Ignore FUD, ${predictionTicker} is UP.`]
+          : [`${predictionTicker} looking weak. 📉`, `Massive dump coming for ${predictionTicker}.`, `Stay away from ${predictionTicker}.`, `SELL ${predictionTicker}!`, `Bear flag on ${predictionTicker}.` ];
+
+        const guruMessage = { id: `guru-${nextTurnNum}`, sender: 'Crypto Guru', text: guruPhrases[Math.floor(Math.random() * guruPhrases.length)] };
+
+        // FORUM
+        const dailyForumPosts: any[] = [];
+        const users = ['ApeLord', 'DiamondHands420', 'StonkMaster', 'TendieKing', 'BagHolder99', 'MoonMission', 'CramerInverse', 'PaperHandsLarry', 'YOLO_God', 'DeepValueHunter', 'StonkEnthusiast', 'LossPornConnoisseur'];
+
+        for (let i = 0; i < 5; i++) {
+          const postTicker = getRandomTicker();
+          const pNextStock = nextStocks[postTicker];
+          const pPrevPrice = stocks[postTicker].currentPrice;
+          const willMoonForum = pNextStock.currentPrice > pPrevPrice;
+          const isRightForum = Math.random() < 0.6; // 60% accurate
+          const adviceMoonForum = isRightForum ? willMoonForum : !willMoonForum;
+
+          const forumPhrases = adviceMoonForum
+            ? [`Just bought ${postTicker}. YOLO!`, `${postTicker} is basically free.`, `${postTicker} to $1000!`, `Short squeeze on ${postTicker}!!`, `All in on ${postTicker}. LFG.`]
+            : [`Who else is bagholding ${postTicker}? 🤡`, `${postTicker} is dead?`, `Bad picks on ${postTicker}.`, `Selling ${postTicker} for gum.`, `🐻 Gang was right about ${postTicker}.` ];
+
+          dailyForumPosts.push({
+            id: `forum-${nextTurnNum}-${i}`,
+            user: users[Math.floor(Math.random() * users.length)],
+            title: forumPhrases[Math.floor(Math.random() * forumPhrases.length)],
+            upvotes: Math.floor(Math.random() * 5000) + 100,
+          });
+        }
+
         if (prevNetWorth > 0) {
           const change = (netWorth - prevNetWorth) / prevNetWorth;
           if (change > 0.5) {
-            extraForumPosts.push({
-              id: `tendies-${nextDayNum}`,
-              user: 'YOU',
-              title: 'TENDIES SECURED! 🍗 LFG!!',
-              upvotes: Math.floor(Math.random() * 50000) + 10000,
-            });
+            dailyForumPosts.push({ id: `tendies-${nextDayNum}`, user: 'YOU', title: 'TENDIES SECURED! 🍗 LFG!!', upvotes: Math.floor(Math.random() * 50000) + 10000 });
             addPopup('TENDIES SECURED!', 'positive');
           } else if (change < -0.3) {
-            extraForumPosts.push({
-              id: `loss-${nextDayNum}`,
-              user: 'YOU',
-              title: 'GUH. Lost 30% today. Am I doing it right?',
-              upvotes: Math.floor(Math.random() * 80000) + 20000,
-            });
+            dailyForumPosts.push({ id: `loss-${nextDayNum}`, user: 'YOU', title: 'GUH. Lost 30% today. Am I doing it right?', upvotes: Math.floor(Math.random() * 80000) + 20000 });
             addPopup('LOSS PORN!', 'negative');
           }
         }
@@ -490,12 +542,7 @@ export const useGameStore = create<GameStore>()(
         if (netWorth <= 0) {
           newKarma += 10000;
           addPopup('LOSS PORN: LEGENDARY STATUS', 'positive', 50, 40);
-          extraForumPosts.push({
-            id: `lp-${nextDayNum}`,
-            user: 'YOU',
-            title: 'I LOST EVERYTHING. AM I A LEGEND YET?',
-            upvotes: 99999,
-          });
+          dailyForumPosts.push({ id: `lp-${nextDayNum}`, user: 'YOU', title: 'I LOST EVERYTHING. AM I A LEGEND YET?', upvotes: 99999 });
         }
 
         set((state) => ({
@@ -505,11 +552,11 @@ export const useGameStore = create<GameStore>()(
           stocks: nextStocks,
           optionsHoldings: remainingOptions,
           karma: newKarma,
-          forumPosts: [...extraForumPosts, ...state.forumPosts],
+          messages: [guruMessage, ...newMessages],
+          forumPosts: [...dailyForumPosts, ...newForumPosts],
           netWorthHistory: [...state.netWorthHistory, { turn: nextTurnNum, value: netWorth }],
         }));
         
-        processEvents();
         triggerFlash('neutral');
         addPopup('NEXT DAY', 'neutral');
       },
@@ -524,4 +571,3 @@ export const useGameStore = create<GameStore>()(
     }
   )
 );
-
