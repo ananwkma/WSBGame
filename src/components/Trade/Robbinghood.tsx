@@ -5,6 +5,8 @@ import type { StockTicker } from '../../store/types';
 import { PriceChart } from './PriceChart';
 import { SwipeConfirm } from './SwipeConfirm';
 import { OptionsChain } from './OptionsChain';
+import { PerformanceIndicator } from '../Feedback/PerformanceIndicator';
+import { formatCurrency, calculatePercentChange } from '../../utils/marketUtils';
 import './Robbinghood.css';
 
 type Tab = 'Portfolio' | 'Trade' | 'History';
@@ -19,12 +21,23 @@ export const Robbinghood: React.FC = () => {
   const { 
     cash, holdings, stocks, nextTurn, 
     buyStock, sellStock, sellOption, buyOption, 
-    getNetWorth, netWorthHistory, optionsHoldings 
+    getNetWorth, netWorthHistory, optionsHoldings,
+    costBasis, tradeHistory, day
   } = useGameStore();
 
   const netWorth = getNetWorth();
   const currentPrice = selectedStock ? stocks[selectedStock].currentPrice : 0;
   
+  // Daily performance
+  const dailyPerformance = useMemo(() => {
+    if (netWorthHistory.length < 2) return { value: 0, percent: 0 };
+    const previousNetWorth = netWorthHistory[netWorthHistory.length - 2].value;
+    return {
+      value: netWorth - previousNetWorth,
+      percent: calculatePercentChange(netWorth, previousNetWorth)
+    };
+  }, [netWorth, netWorthHistory]);
+
   const costPerUnit = useMemo(() => {
     if (tradeMode === 'STOCK') return currentPrice;
     if (selectedOptionData) return selectedOptionData.premium;
@@ -32,10 +45,6 @@ export const Robbinghood: React.FC = () => {
   }, [tradeMode, currentPrice, selectedOptionData]);
 
   const totalCost = tradeAmount * costPerUnit;
-
-  const formatCurrency = (cents: number) => {
-    return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-  };
 
   const handleBuy = () => {
     if (selectedStock) {
@@ -104,7 +113,7 @@ export const Robbinghood: React.FC = () => {
               if (tab !== 'Trade') setSelectedStock(null);
             }}
           >
-            {tab}
+            {tab.toUpperCase()}
           </button>
         ))}
       </div>
@@ -115,6 +124,7 @@ export const Robbinghood: React.FC = () => {
             <div className="robbinghood-stat">
               <div className="robbinghood-label">Net Worth</div>
               <div className="robbinghood-value">{formatCurrency(netWorth)}</div>
+              <PerformanceIndicator value={dailyPerformance.value} percent={dailyPerformance.percent} />
             </div>
             <div className="robbinghood-stat">
               <div className="robbinghood-label">Buying Power</div>
@@ -123,10 +133,17 @@ export const Robbinghood: React.FC = () => {
 
             <div className="chart-container" style={{ width: '100%', height: '100px', backgroundColor: '#2b2b26', margin: '12px 0', border: '2px solid #706b66' }}>
                <PriceChart 
-                 history={netWorthHistory} 
+                 history={useMemo(() => {
+                   const history = [...netWorthHistory];
+                   const lastPoint = history[history.length - 1];
+                   // Only add a live point if it's actually ahead in time
+                   if (!lastPoint || lastPoint.turn < day + 0.5) {
+                     history.push({ turn: day + 0.5, value: netWorth });
+                   }
+                   return history;
+                 }, [netWorthHistory, day, netWorth])} 
                  width={300} 
                  height={100} 
-                 color="#94ba8b" 
                />
             </div>
             
@@ -135,23 +152,36 @@ export const Robbinghood: React.FC = () => {
               {Object.entries(holdings).map(([ticker, amount]) => {
                 if (amount === 0) return null;
                 const price = stocks[ticker as StockTicker].currentPrice;
+                const basis = costBasis[ticker as StockTicker];
+                const profit = (price - basis) * amount;
+                const profitPercent = calculatePercentChange(price, basis);
+                
                 return (
                   <li key={ticker} className="robbinghood-list-item" onClick={() => { setActiveTab('Trade'); setSelectedStock(ticker as StockTicker); }} style={{ cursor: 'pointer' }}>
-                    <span className="ticker">{ticker}</span>
-                    <span className="price" style={{ fontSize: '10px', color: '#a89f8c' }}>{amount} shares</span>
-                    <span className="price">{formatCurrency(price * amount)}</span>
+                    <div style={{ flex: 1 }}>
+                      <span className="ticker">{ticker}</span>
+                      <div className="price" style={{ fontSize: '10px', color: '#a89f8c' }}>{amount} shares @ {formatCurrency(basis)}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div className="price">{formatCurrency(price * amount)}</div>
+                      <PerformanceIndicator value={profit} percent={profitPercent} showAmount={false} />
+                    </div>
                   </li>
                 );
               })}
               {optionsHoldings.map((opt) => (
                 <li key={opt.id} className="robbinghood-list-item">
-                  <span className="ticker" style={{ color: opt.type === 'CALL' ? '#94ba8b' : '#ba8b8b' }}>
-                    {opt.ticker} {opt.type} {formatCurrency(opt.strikePrice)}
-                  </span>
-                  <span className="price" style={{ fontSize: '10px', color: '#a89f8c' }}>{opt.amount} ctrs (Exp Day {opt.expiryDay})</span>
-                  <span className="price">
-                    {formatCurrency(opt.amount * (stocks[opt.ticker as StockTicker].currentPrice * 0.1))}
-                  </span>
+                  <div style={{ flex: 1 }}>
+                    <span className="ticker" style={{ color: opt.type === 'CALL' ? '#94ba8b' : '#ba8b8b' }}>
+                      {opt.ticker} {opt.type} {formatCurrency(opt.strikePrice)}
+                    </span>
+                    <div className="price" style={{ fontSize: '10px', color: '#a89f8c' }}>{opt.amount} ctrs (Exp Day {opt.expiryDay})</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div className="price">
+                      {formatCurrency(opt.amount * calculateOptionPrice(stocks[opt.ticker].currentPrice, opt.strikePrice, opt.type))}
+                    </div>
+                  </div>
                 </li>
               ))}
               {Object.values(holdings).every(v => v === 0) && optionsHoldings.length === 0 && (
@@ -169,18 +199,40 @@ export const Robbinghood: React.FC = () => {
                <>
                  <div className="robbinghood-label">Available Stocks</div>
                  <ul className="robbinghood-list">
-                   {Object.values(stocks).map((stock) => (
-                     <li key={stock.ticker} className="robbinghood-list-item" style={{ cursor: 'pointer' }} onClick={() => setSelectedStock(stock.ticker)}>
-                        <span className="ticker">{stock.ticker}</span>
-                        <span className="price">{formatCurrency(stock.currentPrice)}</span>
-                     </li>
-                   ))}
+                   {Object.values(stocks).map((stock) => {
+                     const history = stock.history;
+                     const prevPrice = history.length > 1 ? history[history.length - 2].price : stock.currentPrice;
+                     const changePercent = calculatePercentChange(stock.currentPrice, prevPrice);
+                     
+                     return (
+                       <li key={stock.ticker} className="robbinghood-list-item" style={{ cursor: 'pointer' }} onClick={() => setSelectedStock(stock.ticker)}>
+                          <span className="ticker">{stock.ticker}</span>
+                          <div style={{ textAlign: 'right' }}>
+                            <span className="price">{formatCurrency(stock.currentPrice)}</span>
+                            <PerformanceIndicator percent={changePercent} showAmount={false} />
+                          </div>
+                       </li>
+                     );
+                   })}
                  </ul>
                </>
              ) : (
                <div className="stock-details">
                  <button className="back-btn" onClick={() => { setSelectedStock(null); setSelectedOptionData(null); }}>← BACK</button>
-                 <h2 style={{ margin: '8px 0' }}>{selectedStock} - {formatCurrency(currentPrice)}</h2>
+                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '8px 0' }}>
+                   <h2 style={{ margin: 0 }}>{selectedStock} - {formatCurrency(currentPrice)}</h2>
+                   {selectedStock && (
+                     <PerformanceIndicator 
+                       percent={calculatePercentChange(
+                         stocks[selectedStock].currentPrice, 
+                         stocks[selectedStock].history.length > 1 
+                           ? stocks[selectedStock].history[stocks[selectedStock].history.length - 2].price 
+                           : stocks[selectedStock].currentPrice
+                       )} 
+                       showAmount={false} 
+                     />
+                   )}
+                 </div>
                  
                  <div style={{ marginBottom: '12px', padding: '8px', backgroundColor: '#3d3d38', border: '1px solid #706b66' }}>
                    <div style={{ fontSize: '10px', color: '#706b66', marginBottom: '4px' }}>YOUR POSITIONS</div>
@@ -319,9 +371,29 @@ export const Robbinghood: React.FC = () => {
         {activeTab === 'History' && (
           <div className="history-view">
              <div className="robbinghood-label">Recent Activity</div>
-             <p style={{ fontSize: '12px', color: '#706b66', marginTop: '16px' }}>
-               No recent activity.
-             </p>
+             <div className="history-list" style={{ maxHeight: '300px', overflowY: 'auto', marginTop: '8px' }}>
+                {tradeHistory.map((entry) => (
+                  <div key={entry.id} className="robbinghood-list-item" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '4px' }}>
+                      <span className="ticker" style={{ fontSize: '12px' }}>
+                        {entry.type} {entry.ticker}
+                      </span>
+                      <span style={{ fontSize: '10px', color: '#706b66' }}>Day {entry.day}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '10px' }}>
+                      <span>{entry.amount} @ {formatCurrency(entry.price)}</span>
+                      {entry.realizedPL !== undefined && (
+                        <PerformanceIndicator value={entry.realizedPL} showPercent={false} />
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {tradeHistory.length === 0 && (
+                   <p style={{ fontSize: '12px', color: '#706b66', marginTop: '16px', textAlign: 'center' }}>
+                    No recent activity.
+                  </p>
+                )}
+             </div>
           </div>
         )}
       </div>
