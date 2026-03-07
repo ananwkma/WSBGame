@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
+import { StockMarquee } from './StockMarquee';
+import { MiniChart } from './MiniChart';
 import './Laptop.css';
+import './LaptopBrowser.css';
 
 const FAKE_USERS = ['ApeLord', 'DiamondHands420', 'StonkMaster', 'TendieKing', 'BagHolder99', 'MoonMission', 'CramerInverse', 'PaperHandsLarry', 'YOLO_God'];
 const FAKE_MESSAGES = [
@@ -25,11 +28,36 @@ export const GuruTube: React.FC = () => {
   const [frame, setFrame] = useState(0);
   const [chatMessages, setChatMessages] = useState<{user: string, text: string, id: number}[]>([]);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const threads = useGameStore((state) => state.threads);
+  const { threads, stocks, guruPrediction } = useGameStore((state) => ({ 
+    threads: state.threads, 
+    stocks: state.stocks,
+    guruPrediction: state.guruPrediction
+  }));
+  
+  const stockList = Object.values(stocks);
   
   // Find the most recent guru message from the dedicated thread
   const guruThread = threads['Crypto Guru'];
   const advice = guruThread?.messages[0]?.text || "DIAMOND HANDS ONLY! 💎🙌";
+
+  // Derive Guru Emotion
+  const getGuruEmoji = () => {
+    if (!guruPrediction) return frame === 0 ? '📈' : '📈';
+    
+    const stock = stocks[guruPrediction.ticker];
+    if (!stock) return '📈';
+    
+    const prevPrice = stock.history.length > 1 
+      ? stock.history[stock.history.length - 2].price 
+      : stock.currentPrice;
+    const isUp = stock.currentPrice >= prevPrice;
+
+    if (guruPrediction.sentiment === 'BULLISH') {
+      return isUp ? '🤑' : '😱';
+    } else {
+      return isUp ? '🤡' : '📉';
+    }
+  };
 
   useEffect(() => {
     const interval = setInterval(() => setFrame(f => (f === 0 ? 1 : 0)), 500); // 2fps
@@ -69,6 +97,8 @@ export const GuruTube: React.FC = () => {
           <button className="pixel-btn">🔊</button>
         </div>
       </div>
+
+      <StockMarquee stocks={stockList} />
       
       <div className="gurutube-main">
         <div className="video-player">
@@ -81,14 +111,36 @@ export const GuruTube: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '24px'
+              fontSize: '32px',
+              textShadow: '2px 2px 0px rgba(0,0,0,0.2)'
             }}>
-              {frame === 0 ? '😮' : '😐'}
+              {getGuruEmoji()}
             </div>
           </div>
           <div className="video-overlay">
             <div className="live-badge">LIVE</div>
             <div className="viewer-count">420K watching</div>
+          </div>
+          
+          <div className="trending-sidebar">
+            <div className="trending-header">TRENDING</div>
+            {stockList.map(stock => {
+               const prevPrice = stock.history.length > 1 
+                 ? stock.history[stock.history.length - 2].price 
+                 : stock.currentPrice;
+               const isUp = stock.currentPrice >= prevPrice;
+               return (
+                 <div key={stock.ticker} className="trending-item">
+                   <div className="trending-info">
+                     <span className="trending-ticker">{stock.ticker}</span>
+                     <span className={`trending-price ${isUp ? 'up' : 'down'}`}>
+                       ${(stock.currentPrice / 100).toFixed(2)}
+                     </span>
+                   </div>
+                   <MiniChart data={stock.history.slice(-10).map(p => p.price)} width={40} height={15} />
+                 </div>
+               );
+            })}
           </div>
         </div>
 
