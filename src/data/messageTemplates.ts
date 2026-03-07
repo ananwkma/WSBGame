@@ -1,4 +1,4 @@
-export type TemplateCategory = 'WIFE' | 'GURU' | 'APES' | 'BROKERAGE';
+export type TemplateCategory = 'WIFE' | 'GURU' | 'APES' | 'BROKERAGE' | 'IRS' | 'LAMBO' | 'STALKER' | 'COWORKER';
 export type PerformanceTier = 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
 
 export interface TemplateContext {
@@ -83,16 +83,87 @@ export const MESSAGE_TEMPLATES: Record<TemplateCategory, Record<PerformanceTier,
       "Your account has reached a new all-time high! Great job.",
       "You have been upgraded to Gold Status. Enjoy your 'perks'.",
       "Interest rates on your cash balance have increased.",
+      "You've been invited to our private wealth management seminar.",
     ],
     NEGATIVE: [
       "WARNING: Your account is approaching margin maintenance requirements.",
       "Margin Call: Please deposit funds or liquidate positions immediately.",
       "Your recent trades have been flagged for high volatility. Trade carefully.",
+      "Restriction: You are currently flagged as a pattern day trader.",
     ],
     NEUTRAL: [
       "Scheduled maintenance tonight. Expect some 'glitches'.",
       "New features added to the platform. Check them out!",
       "Your monthly statement is ready for review.",
+      "Privacy policy update: We share everything with the market makers.",
+    ],
+  },
+  IRS: {
+    POSITIVE: [
+      "We've noticed your recent capital gains. We look forward to your tax return.",
+      "Congratulations on your success. Please remember to set aside 40% for us.",
+      "Our system flagged your account for 'exceptional' profitability. Audits are fun!",
+    ],
+    NEGATIVE: [
+      "We've noticed your significant losses. You can deduct $3,000. Maximum. Good luck.",
+      "Even in poverty, you still owe us for those early gains.",
+      "This is a reminder that capital losses don't pay the rent.",
+    ],
+    NEUTRAL: [
+      "This is an automated message from the Internal Revenue Service.",
+      "Please verify your identity via our extremely slow web portal.",
+      "Your tax transcript is now available. It's 500 pages of nonsense.",
+    ],
+  },
+  LAMBO: {
+    POSITIVE: [
+      "The Aventador you inquired about is ready for a test drive. Bring cash.",
+      "We have a Huracán in 'Moon Green' that just arrived. Interested?",
+      "Our platinum membership is now open to you. Welcome to the club.",
+    ],
+    NEGATIVE: [
+      "Unfortunately, your credit application was denied. Try a used Honda?",
+      "Please stop loitering in our showroom. The security is getting nervous.",
+      "We've updated our pricing. You are now further away from your dream car.",
+    ],
+    NEUTRAL: [
+      "New models for next year have been announced.",
+      "Did you know: Lamborghinis were originally tractors. Just like your portfolio.",
+      "Check out our new line of branded keychains. It's all you can afford right now.",
+    ],
+  },
+  STALKER: {
+    POSITIVE: [
+      "I saw you bought more {ticker}. I did too. We're connected.",
+      "You're doing so well. I'm watching your account from outside your window.",
+      "I like the way you click the 'Buy' button. It's very firm.",
+    ],
+    NEGATIVE: [
+      "I saw you sell. You're weak. I'm disappointed in you.",
+      "Why are you crying? The screen is getting blurry. I'll bring tissues.",
+      "You lost so much. Don't worry, I'll still be here when you're broke.",
+    ],
+    NEUTRAL: [
+      "I know where you live. And I know your average cost on {ticker}.",
+      "Your curtains are open. I like the new monitor.",
+      "Did you feel that? That was me breathing on your neck through the internet.",
+    ],
+  },
+  COWORKER: {
+    POSITIVE: [
+      "Hey, I heard you're crushing it in the market. Can I quit yet?",
+      "The boss is looking for you, but I told him you're busy making millions.",
+      "Lunch is on you today, Mr. Moneybags!",
+    ],
+    NEGATIVE: [
+      "Is it true you lost your life savings? HR wants to talk about your 'distractions'.",
+      "I saw your screen. Those red bars look painful. You okay, buddy?",
+      "Hey, I have a spare desk in the basement if you need to hide from the debt collectors.",
+    ],
+    NEUTRAL: [
+      "Did you finish that report? Or are you still watching the charts?",
+      "Coffee break? I want to hear about this 'short squeeze' thing again.",
+      "The printer is jammed. Just like your trade orders probably.",
     ],
   },
 };

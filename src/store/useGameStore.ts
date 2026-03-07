@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GameStore, StockTicker, GameEvent, EndingType, StockData } from './types';
 import { generateHistoricalData, calculateBS } from '../utils/marketUtils';
-import { getRandomTemplate, getRandomPrediction, PerformanceTier } from '../data/messageTemplates';
+import { getRandomTemplate, getRandomPrediction } from '../data/messageTemplates';
+import type { PerformanceTier } from '../data/messageTemplates';
 
 const INITIAL_EVENTS: GameEvent[] = [
   {
@@ -723,6 +724,41 @@ export const useGameStore = create<GameStore>()(
         if (newThreads['Wife']) {
           newThreads['Wife'].messages = [wifeMessage, ...newThreads['Wife'].messages];
         }
+
+        // --- ADDITIONAL MESSAGES (Plan 10-03) ---
+        const potentialContacts: { name: string; avatar: string; category: any }[] = [
+          { name: 'Ape Friend', avatar: '🦍', category: 'APES' },
+          { name: 'Brokerage', avatar: '🏛️', category: 'BROKERAGE' },
+          { name: "Wife's Boyfriend", avatar: '😎', category: 'APES' },
+          { name: 'IRS Auditor', avatar: '💼', category: 'IRS' },
+          { name: 'Lamborghini Dealership', avatar: '🏎️', category: 'LAMBO' },
+          { name: 'Unknown Stalker', avatar: '👤', category: 'STALKER' },
+          { name: 'Ex-Coworker', avatar: '👨‍💼', category: 'COWORKER' },
+        ];
+
+        // Determine how many extra messages (0 to 2, for a total of 2 to 4)
+        const extraCount = Math.floor(Math.random() * 3); // 0, 1, or 2
+        const shuffled = potentialContacts.sort(() => 0.5 - Math.random());
+        const selected = shuffled.slice(0, extraCount);
+
+        selected.forEach((contact) => {
+          const contactTier: PerformanceTier = performance > 1.5 ? 'POSITIVE' : performance < 0.5 ? 'NEGATIVE' : 'NEUTRAL';
+          const text = getRandomTemplate(contact.category, contactTier, { ticker: getRandomTicker() });
+          
+          if (!newThreads[contact.name]) {
+            newThreads[contact.name] = {
+              contactName: contact.name,
+              avatar: contact.avatar,
+              lastReadDay: day, // Mark as new (day before nextDayNum)
+              messages: [],
+            };
+          }
+
+          newThreads[contact.name].messages = [
+            { id: `${contact.name.toLowerCase()}-${nextDayNum}`, sender: contact.name, text, day: nextDayNum },
+            ...newThreads[contact.name].messages,
+          ];
+        });
 
         // FORUM
         const dailyForumPosts: any[] = [];

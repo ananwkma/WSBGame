@@ -19,7 +19,7 @@ export const Robbinghood: React.FC = () => {
   const [selectedOptionData, setSelectedOptionData] = useState<any>(null);
   
   const { 
-    cash, holdings, stocks, nextTurn, 
+    cash, holdings, stocks, 
     buyStock, sellStock, sellOption, buyOption, 
     getNetWorth, netWorthHistory, optionsHoldings,
     costBasis, tradeHistory, day

@@ -1,18 +1,18 @@
 import React, { useMemo } from 'react';
 import { line, curveLinear } from 'd3-shape';
-import type { HistoryPoint } from '../../store/types';
 
 interface PriceChartProps {
-  history: any[]; // Can be HistoryPoint[] or NetWorthPoint[]
+  history: any[]; // Can be HistoryPoint[] or NetWorthHistory point
   width: number;
   height: number;
-  color?: string;
+  color?: string; // Optional override color
 }
 
+const formatCurrency = (cents: number) => {
+  return `$${(cents / 100).toFixed(0)}`;
+};
+
 export const PriceChart: React.FC<PriceChartProps> = ({ history, width, height, color }) => {
-  const formatCurrency = (cents: number) => {
-    return `$${(cents / 100).toFixed(0)}`;
-  };
 
   const chartColor = useMemo(() => {
     if (color) return color;

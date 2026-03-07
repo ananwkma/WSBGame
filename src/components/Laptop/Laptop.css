@@ -154,3 +154,53 @@
 .pixel-btn:hover {
   color: #2b2b26;
 }
+
+/* Trending Sidebar */
+.trending-sidebar {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  background-color: rgba(43, 43, 38, 0.9);
+  border: 1px solid #706b66;
+  padding: 4px;
+  width: 80px;
+  font-family: inherit;
+  font-size: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+}
+
+.trending-header {
+  color: #a89f8c;
+  font-weight: bold;
+  text-align: center;
+  border-bottom: 1px solid #706b66;
+  margin-bottom: 2px;
+}
+
+.trending-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trending-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trending-ticker {
+  color: #e0dbcb;
+  font-weight: bold;
+}
+
+.trending-price.up {
+  color: #00ff00;
+}
+
+.trending-price.down {
+  color: #ff0000;
+}

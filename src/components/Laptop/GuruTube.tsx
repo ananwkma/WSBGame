@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
 import { StockMarquee } from './StockMarquee';
@@ -28,17 +28,18 @@ export const GuruTube: React.FC = () => {
   const [frame, setFrame] = useState(0);
   const [chatMessages, setChatMessages] = useState<{user: string, text: string, id: number}[]>([]);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const { threads, stocks, guruPrediction } = useGameStore((state) => ({ 
-    threads: state.threads, 
-    stocks: state.stocks,
-    guruPrediction: state.guruPrediction
-  }));
   
-  const stockList = Object.values(stocks);
+  const threads = useGameStore((state) => state.threads);
+  const stocks = useGameStore((state) => state.stocks);
+  const guruPrediction = useGameStore((state) => state.guruPrediction);
+  
+  const stockList = useMemo(() => Object.values(stocks), [stocks]);
   
   // Find the most recent guru message from the dedicated thread
-  const guruThread = threads['Crypto Guru'];
-  const advice = guruThread?.messages[0]?.text || "DIAMOND HANDS ONLY! 💎🙌";
+  const advice = useMemo(() => {
+    const guruThread = threads['Crypto Guru'];
+    return guruThread?.messages[0]?.text || "DIAMOND HANDS ONLY! 💎🙌";
+  }, [threads]);
 
   // Derive Guru Emotion
   const getGuruEmoji = () => {
