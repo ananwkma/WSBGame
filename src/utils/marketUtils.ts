@@ -57,3 +57,101 @@ export const calculatePercentChange = (current: number, previous: number): numbe
   if (previous === 0) return 0;
   return ((current - previous) / previous) * 100;
 };
+
+/**
+ * Abramowitz & Stegun approximation for Standard Normal CDF.
+ * This provides a high-accuracy approximation of the cumulative distribution function
+ * for the standard normal distribution, essential for Black-Scholes.
+ */
+export const stdNormalCDF = (x: number): number => {
+  const b1 = 0.319381530;
+  const b2 = -0.356563782;
+  const b3 = 1.781477937;
+  const b4 = -1.821255978;
+  const b5 = 1.330274429;
+  const p = 0.2316419;
+  const c = 0.39894228;
+
+  if (x >= 0) {
+    const t = 1.0 / (1.0 + p * x);
+    return (1.0 - c * Math.exp(-x * x / 2.0) * t *
+      (t * (t * (t * (t * b5 + b4) + b3) + b2) + b1));
+  } else {
+    const t = 1.0 / (1.0 - p * x);
+    return (c * Math.exp(-x * x / 2.0) * t *
+      (t * (t * (t * (t * b5 + b4) + b3) + b2) + b1));
+  }
+};
+
+/**
+ * Standard Normal Probability Density Function (PDF).
+ */
+export const stdNormalPDF = (x: number): number => {
+  return Math.exp(-0.5 * Math.pow(x, 2)) / Math.sqrt(2 * Math.PI);
+};
+
+/**
+ * Calculates Option Price and Greeks using the Black-Scholes model.
+ * 
+ * @param type 'CALL' or 'PUT'
+ * @param s Current Stock Price (in cents)
+ * @param k Strike Price (in cents)
+ * @param t Time to expiration in years (e.g., 1/252 for 1 day)
+ * @param v Volatility (IV) as a decimal (e.g., 0.5 for 50%)
+ * @param r Risk-free interest rate (e.g., 0.05 for 5%)
+ * @returns { price, delta, gamma, theta, vega }
+ */
+export const calculateBS = (
+  type: 'CALL' | 'PUT',
+  s: number,
+  k: number,
+  t: number,
+  v: number,
+  r: number = 0.05
+) => {
+  // Edge case: Expiry or near-expiry
+  if (t <= 0.0001) {
+    const intrinsic = type === 'CALL' ? Math.max(0, s - k) : Math.max(0, k - s);
+    return {
+      price: Math.max(1, Math.round(intrinsic)), // Minimum 1 cent for active options
+      delta: type === 'CALL' ? (s > k ? 1 : 0) : (s < k ? -1 : 0),
+      gamma: 0,
+      theta: 0,
+      vega: 0
+    };
+  }
+
+  // Intermediate BS components
+  const d1 = (Math.log(s / k) + (r + Math.pow(v, 2) / 2) * t) / (v * Math.sqrt(t));
+  const d2 = d1 - v * Math.sqrt(t);
+
+  const n_d1 = stdNormalCDF(d1);
+  const n_d2 = stdNormalCDF(d2);
+  const pdf_d1 = stdNormalPDF(d1);
+
+  let price, delta, theta;
+  const exp_rt = Math.exp(-r * t);
+
+  if (type === 'CALL') {
+    price = s * n_d1 - k * exp_rt * n_d2;
+    delta = n_d1;
+    // Theta is usually negative, representing daily decay (divided by 252)
+    theta = (-(s * pdf_d1 * v) / (2 * Math.sqrt(t)) - r * k * exp_rt * n_d2) / 252;
+  } else {
+    price = k * exp_rt * stdNormalCDF(-d2) - s * stdNormalCDF(-d1);
+    delta = n_d1 - 1;
+    // Theta is usually negative, representing daily decay (divided by 252)
+    theta = (-(s * pdf_d1 * v) / (2 * Math.sqrt(t)) + r * k * exp_rt * stdNormalCDF(-d2)) / 252;
+  }
+
+  const gamma = pdf_d1 / (s * v * Math.sqrt(t));
+  const vega = (s * Math.sqrt(t) * pdf_d1) / 100; // Price change for 1% IV shift
+
+  return {
+    price: Math.max(1, Math.round(price)), // Ensure non-zero price and round to cents
+    delta,
+    gamma,
+    theta,
+    vega
+  };
+};

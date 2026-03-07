@@ -9,7 +9,8 @@
 - [x] **Phase 6: Options Chains & Portfolio Analytics** - High-fidelity options, portfolio tracking, and visual overhaul.
 - [x] **Phase 7: History Tab & Performance Indicators** - Trade ledger, cost basis, and color-coded gain/loss feedback.
 - [x] **Phase 8: Messaging Overhaul & Chart Fix** - Threaded messaging, unread indicators, dynamic Wife dialogue, and fixing the chart line color bug.
-- [ ] **Phase 9: Accurate Options Engine** - Implement Black-Scholes model, updated Greeks, and IV dynamics (IV Crush).
+- [x] **Phase 9: Accurate Options Engine** - Implement Black-Scholes model, updated Greeks, and IV dynamics (IV Crush).
+- [ ] **Phase 10: Social Expansion & GuruTube Overhaul** - Dynamic GuruTube UI (charts, marquees, emotions) and high-volume narrative templates.
 
 ## Phase Details
 
@@ -41,7 +42,22 @@
 **Plans**:
 - [x] 09-01-PLAN.md — Logic: Black-Scholes Engine & Normal CDF.
 - [x] 09-02-PLAN.md — State: Dynamic IV & IV Crush Logic.
-- [ ] 09-03-PLAN.md — UI: IV Indicators & Vega Display.
+- [x] 09-03-PLAN.md — UI: IV Indicators & Vega Display.
+
+### Phase 10: Social Expansion & GuruTube Overhaul
+**Goal**: Overhaul GuruTube into a high-energy financial news parody and massively expand the narrative content.
+**Depends on**: Phase 9
+**Requirements**: NARR-06, NARR-07, VIS-09
+**Success Criteria**:
+  1. GuruTube features dynamic SVG mini-charts that reflect real stock performance.
+  2. Multiple ticker marquees scroll across the GuruTube UI with live stock data.
+  3. The Guru character has at least 4 distinct emotional states tied to their current prediction.
+  4. Daily text volume increased to 2-4 messages per turn.
+  5. Message variety improved via a new template system in `src/data/messageTemplates.ts`.
+**Plans**:
+- [ ] 10-01-PLAN.md — UI: GuruTube Visual Overhaul (SVG Charts & Marquees).
+- [ ] 10-02-PLAN.md — Logic: Guru Emotions & Narrative Template System.
+- [ ] 10-03-PLAN.md — Content: High-Volume Message Generation & Polish.
 
 ## Progress Table
 
@@ -56,4 +72,6 @@
 | 6: Options Chains | 3/3 | Completed | 2026-03-05 |
 | 7: History & Perf | 3/3 | Completed | 2026-03-06 |
 | 8: Messaging & Chart | 3/3 | Completed | 2026-03-06 |
-| 9: Options Engine | 2/3 | In Progress | |
+| 9: Options Engine | 3/3 | Completed | 2026-03-06 |
+| 10: Social & Guru | 0/3 | Not started | - |
+

@@ -25,6 +25,11 @@ export const Robbinghood: React.FC = () => {
     costBasis, tradeHistory, day
   } = useGameStore();
 
+  // Reset trade amount when selection changes
+  React.useEffect(() => {
+    setTradeAmount(1);
+  }, [selectedStock, selectedOptionData]);
+
   const netWorth = getNetWorth();
   const currentPrice = selectedStock ? stocks[selectedStock].currentPrice : 0;
   
@@ -70,7 +75,9 @@ export const Robbinghood: React.FC = () => {
           {
             delta: selectedOptionData.delta,
             gamma: selectedOptionData.gamma,
-            theta: selectedOptionData.theta
+            theta: selectedOptionData.theta,
+            vega: selectedOptionData.vega,
+            premium: selectedOptionData.premium // Pass the UI premium to avoid slippage/insufficient funds errors
           }
         );
       }
@@ -172,23 +179,28 @@ export const Robbinghood: React.FC = () => {
                   </li>
                 );
               })}
-              {optionsHoldings.map((opt) => (
-                <li key={opt.id} className="robbinghood-list-item">
-                  <div style={{ flex: 1 }}>
-                    <span className="ticker" style={{ color: opt.type === 'CALL' ? '#94ba8b' : '#ba8b8b' }}>
-                      {opt.ticker} {opt.type} {formatCurrency(opt.strikePrice)}
-                    </span>
-                    <div className="price" style={{ fontSize: '10px', color: '#a89f8c' }}>
-                      {opt.amount} ctrs (Exp Day {opt.expiryDay}) • IV: {(stocks[opt.ticker].iv * 100).toFixed(0)}%
+              {optionsHoldings.map((opt) => {
+                const stock = stocks[opt.ticker];
+                const tRemaining = Math.max(0.0001, (opt.expiryDay - day) / 252);
+                const currentPremium = calculateOptionPrice(stock.currentPrice, opt.strikePrice, opt.type, stock.iv, tRemaining);
+
+                return (
+                  <li key={opt.id} className="robbinghood-list-item">
+                    <div style={{ flex: 1 }}>
+                      <span className="ticker" style={{ color: opt.type === 'CALL' ? '#94ba8b' : '#ba8b8b' }}>
+                        {opt.ticker} {opt.type} {formatCurrency(opt.strikePrice)}
+                      </span>
+                      <div className="price" style={{ fontSize: '10px', color: '#a89f8c' }}>{opt.amount} ctrs (Exp Day {opt.expiryDay})</div>
                     </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div className="price">
-                      {formatCurrency(opt.amount * calculateOptionPrice(stocks[opt.ticker].currentPrice, opt.strikePrice, opt.type))}
+                    <div style={{ textAlign: 'right' }}>
+                      <div className="price">
+                        {formatCurrency(opt.amount * currentPremium)}
+                      </div>
+                      <div style={{ fontSize: '10px', color: '#706b66' }}>IV: {(stock.iv * 100).toFixed(0)}%</div>
                     </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
               {Object.values(holdings).every(v => v === 0) && optionsHoldings.length === 0 && (
                 <li className="robbinghood-list-item" style={{ color: '#706b66', fontSize: '12px' }}>
                   No holdings yet. Buy some stocks!

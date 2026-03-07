@@ -30,12 +30,18 @@
 - **TECH-02: State Management:** Global game state (Money, Stocks, Reputation, Story Progress) managed via Zustand for performance.
 - **TECH-03: Persistence:** Simple local storage save system to track progress between sessions.
 
-## Advanced Features (Phase 5)
+## Advanced Features (Phase 5+)
 - **TRADE-06: Options Support:** User can buy Calls and Puts for all stocks with turn-based expiry.
 - **TRADE-07: Real-time Cost Calculation:** Trade page shows expected cost and buying power before execution.
 - **TRADE-08: "All In" Execution:** Shortcut to spend all available cash on a specific stock or option.
 - **NARR-05: Reactive Social Feed:** Forum posts and messages dynamically respond to stock performance and portfolio changes.
 - **VIS-05: Enhanced Readability:** High-contrast bold text for mobile/phone interface to improve accessibility.
+
+## Accurate Options Engine (Phase 9)
+- **TRADE-09: Black-Scholes Model:** Options pricing uses a standard BS approximation for calls and puts.
+- **TRADE-10: Implied Volatility (IV):** Each stock has a unique IV profile that changes based on market events and "Hype."
+- **TRADE-11: Options Greeks:** Real-time calculation of Delta, Gamma, Theta, and Vega for all options.
+- **TRADE-12: IV Crush Logic:** IV spikes during "Hype" phases and drops after significant price movements or "Earnings."
 
 ## Traceability
 
@@ -66,3 +72,7 @@
 | TRADE-08 | Phase 5 | Pending |
 | NARR-05 | Phase 5 | Pending |
 | VIS-05 | Phase 5 | Pending |
+| TRADE-09 | Phase 9 | Pending |
+| TRADE-10 | Phase 9 | Complete |
+| TRADE-11 | Phase 9 | Complete |
+| TRADE-12 | Phase 9 | Complete |

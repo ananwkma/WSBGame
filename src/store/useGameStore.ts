@@ -141,12 +141,14 @@ export const calculateVega = (price: number, strike: number, iv: number, t: numb
   return calculateBS('CALL', price, strike, t, iv).vega;
 };
 
-export const calculateOptionPrice = (price: number, strike: number, type: 'CALL' | 'PUT', iv: number, t: number = 1/252) => {
-  return calculateBS(type, price, strike, t, iv).price;
+export const calculateOptionPrice = (price: number, strike: number, type: 'CALL' | 'PUT', iv: number, t: number) => {
+  const result = calculateBS(type, price, strike, t, iv).price;
+  return isNaN(result) ? 0 : result;
 };
 
 export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, iv: number, heldOptions: any[] = []) => {
   const roundTo = 500; // $5.00 increments
+  const t = 3/252; // Options in the chain are 3DTE by default
   
   // 1. Generate standard OTM strikes
   const otmStrikes: number[] = [];
@@ -172,7 +174,7 @@ export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, 
   const allStrikes = Array.from(new Set([...otmStrikes, ...heldStrikes])).sort((a, b) => a - b);
 
   return allStrikes.flatMap((strike) => {
-    const callBS = calculateBS('CALL', currentPrice, strike, 1/252, iv);
+    const callBS = calculateBS('CALL', currentPrice, strike, t, iv);
     const callPrice = callBS.price;
     const callGreeks = {
       delta: callBS.delta,
@@ -181,7 +183,7 @@ export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, 
       vega: callBS.vega,
     };
 
-    const putBS = calculateBS('PUT', currentPrice, strike, 1/252, iv);
+    const putBS = calculateBS('PUT', currentPrice, strike, t, iv);
     const putPrice = putBS.price;
     const putGreeks = {
       delta: putBS.delta,
@@ -341,7 +343,14 @@ export const useGameStore = create<GameStore>()(
 
       buyOption: (ticker, type, amount, strikePrice, greeks) => {
         const { cash, stocks, day, tradeHistory, hype, triggerFlash, addPopup } = get();
-        const premiumPerUnit = calculateOptionPrice(stocks[ticker].currentPrice, strikePrice, type);
+        const stock = stocks[ticker];
+        const tInitial = 3/252; // New options are 3DTE
+        
+        // Use premium from UI if available, otherwise calculate it
+        const premiumPerUnit = greeks.premium !== undefined 
+          ? greeks.premium 
+          : calculateOptionPrice(stock.currentPrice, strikePrice, type, stock.iv, tInitial);
+          
         const totalCost = premiumPerUnit * amount;
 
         if (cash >= totalCost) {
@@ -352,9 +361,12 @@ export const useGameStore = create<GameStore>()(
             type,
             strikePrice,
             amount,
-            expiryDay: day + 1, // 1DTE
+            expiryDay: day + 3, // 3DTE
             premiumPaid: totalCost,
-            ...greeks,
+            delta: greeks.delta,
+            gamma: greeks.gamma,
+            theta: greeks.theta,
+            vega: greeks.vega
           };
 
           const tradeEntry = {
@@ -389,8 +401,9 @@ export const useGameStore = create<GameStore>()(
         const option = optionsHoldings.find(o => o.id === optionId);
         
         if (option && option.amount >= amount) {
-          const currentPrice = stocks[option.ticker].currentPrice;
-          const marketValuePerUnit = calculateOptionPrice(currentPrice, option.strikePrice, option.type);
+          const stock = stocks[option.ticker];
+          const tRemaining = Math.max(0.0001, (option.expiryDay - day) / 252);
+          const marketValuePerUnit = calculateOptionPrice(stock.currentPrice, option.strikePrice, option.type, stock.iv, tRemaining);
           const revenue = marketValuePerUnit * amount;
           
           const costBasisPerUnit = option.premiumPaid / option.amount;
@@ -429,14 +442,15 @@ export const useGameStore = create<GameStore>()(
       },
 
       getNetWorth: () => {
-        const { cash, holdings, stocks, optionsHoldings } = get();
+        const { cash, holdings, stocks, optionsHoldings, day } = get();
         const stockValue = (Object.keys(holdings) as StockTicker[]).reduce((total, ticker) => {
           return total + (stocks[ticker].currentPrice * holdings[ticker]);
         }, 0);
         
         const optionsValue = optionsHoldings.reduce((total, option) => {
-          const currentPrice = stocks[option.ticker].currentPrice;
-          const marketValue = calculateOptionPrice(currentPrice, option.strikePrice, option.type);
+          const stock = stocks[option.ticker];
+          const tRemaining = Math.max(0.0001, (option.expiryDay - day) / 252);
+          const marketValue = calculateOptionPrice(stock.currentPrice, option.strikePrice, option.type, stock.iv, tRemaining);
           return total + (marketValue * option.amount);
         }, 0);
 
@@ -639,8 +653,9 @@ export const useGameStore = create<GameStore>()(
         }, 0);
         
         const optionsValue = remainingOptions.reduce((total, option) => {
-          const currentPrice = nextStocks[option.ticker].currentPrice;
-          const marketValue = calculateOptionPrice(currentPrice, option.strikePrice, option.type);
+          const stock = nextStocks[option.ticker];
+          const tRemaining = Math.max(0.0001, (option.expiryDay - nextDayNum) / 252);
+          const marketValue = calculateOptionPrice(stock.currentPrice, option.strikePrice, option.type, stock.iv, tRemaining);
           return total + (marketValue * option.amount);
         }, 0);
 

@@ -12,6 +12,7 @@ export interface OptionContract {
   delta: number;
   gamma: number;
   theta: number;
+  vega: number;
   premiumPaid: number; // total premium paid for the contract in cents
 }
 
@@ -42,6 +43,7 @@ export interface StockData {
   ticker: StockTicker;
   currentPrice: number;
   history: HistoryPoint[];
+  iv: number;
 }
 
 export type FeedbackType = 'positive' | 'negative' | 'neutral';
@@ -110,7 +112,7 @@ export interface GameState {
 export interface GameActions {
   buyStock: (ticker: StockTicker, amount: number) => void;
   sellStock: (ticker: StockTicker, amount: number) => void;
-  buyOption: (ticker: StockTicker, type: OptionType, amount: number, strikePrice: number, greeks: { delta: number, gamma: number, theta: number }) => void;
+  buyOption: (ticker: StockTicker, type: OptionType, amount: number, strikePrice: number, greeks: { delta: number, gamma: number, theta: number, vega: number, premium?: number }) => void;
   sellOption: (optionId: string, amount: number) => void;
   getNetWorth: () => number;
   nextTurn: () => void;

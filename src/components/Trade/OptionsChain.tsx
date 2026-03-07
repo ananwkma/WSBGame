@@ -10,8 +10,8 @@ interface OptionsChainProps {
 
 export const OptionsChain: React.FC<OptionsChainProps> = ({ ticker, selectedOption, onSelect }) => {
   const { stocks, optionsHoldings } = useGameStore();
-  const currentPrice = stocks[ticker].currentPrice;
-  const chain = generateOptionsChain(ticker, currentPrice, optionsHoldings);
+  const stock = stocks[ticker];
+  const chain = generateOptionsChain(ticker, stock.currentPrice, stock.iv, optionsHoldings);
 
   const formatCurrency = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
