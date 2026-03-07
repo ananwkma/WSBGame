@@ -35,28 +35,27 @@ export const GuruTube: React.FC = () => {
   
   const stockList = useMemo(() => Object.values(stocks), [stocks]);
   
+  // Calculate Market Sentiment (Happy if > 50% of stocks are up)
+  const marketSentiment = useMemo(() => {
+    const upCount = stockList.filter(stock => {
+      const prevPrice = stock.history.length > 1 ? stock.history[stock.history.length - 2].price : stock.currentPrice;
+      return stock.currentPrice >= prevPrice;
+    }).length;
+    return upCount >= stockList.length / 2 ? 'HAPPY' : 'SAD';
+  }, [stockList]);
+
   // Find the most recent guru message from the dedicated thread
   const advice = useMemo(() => {
     const guruThread = threads['Crypto Guru'];
     return guruThread?.messages[0]?.text || "DIAMOND HANDS ONLY! 💎🙌";
   }, [threads]);
 
-  // Derive Guru Emotion
-  const getGuruEmoji = () => {
-    if (!guruPrediction) return frame === 0 ? '📈' : '📈';
-    
-    const stock = stocks[guruPrediction.ticker];
-    if (!stock) return '📈';
-    
-    const prevPrice = stock.history.length > 1 
-      ? stock.history[stock.history.length - 2].price 
-      : stock.currentPrice;
-    const isUp = stock.currentPrice >= prevPrice;
-
-    if (guruPrediction.sentiment === 'BULLISH') {
-      return isUp ? '🤑' : '😱';
+  // Derive Guru Face
+  const getGuruFace = () => {
+    if (marketSentiment === 'HAPPY') {
+      return frame === 0 ? '😎' : '🤑';
     } else {
-      return isUp ? '🤡' : '📉';
+      return frame === 0 ? '😨' : '😭';
     }
   };
 
@@ -103,20 +102,21 @@ export const GuruTube: React.FC = () => {
       
       <div className="gurutube-main">
         <div className="video-player">
-          <div className={`guru-avatar frame-${frame}`}>
-            <div style={{ 
-              width: '64px', 
-              height: '64px', 
-              backgroundColor: frame === 0 ? '#e0dbcb' : '#a89f8c',
-              border: '4px solid #2b2b26',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '32px',
-              textShadow: '2px 2px 0px rgba(0,0,0,0.2)'
-            }}>
-              {getGuruEmoji()}
-            </div>
+          <div style={{ 
+            width: '100%', 
+            height: '100%', 
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '40vmin', // Scalable size based on viewport
+            textShadow: '1vmin 1vmin 0px rgba(0,0,0,0.3)',
+            imageRendering: 'pixelated',
+            transition: 'transform 0.1s steps(2)',
+            transform: frame === 1 ? 'scale(1.05)' : 'scale(1)',
+            lineHeight: 1,
+            overflow: 'hidden'
+          }}>
+            {getGuruFace()}
           </div>
           <div className="video-overlay">
             <div className="live-badge">LIVE</div>
