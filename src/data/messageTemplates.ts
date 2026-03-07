@@ -27,30 +27,112 @@ export const WIFE_BRACKETS: { min: number; max: number; key: WifeBracket }[] = [
   { min: 100000000000, max: Infinity, key: 'BILLIONAIRE' },
 ];
 
-export const MESSAGE_TEMPLATES: Record<TemplateCategory, Record<PerformanceTier, string[]>> = {
-  WIFE: {
-    POSITIVE: [
-      "Honey, I'm so proud of you! I'm looking at houses in the Hamptons.",
-      "Did you see that new Tesla? I think it would look great in our driveway.",
-      "I told my mom you're a financial genius. Don't make me a liar!",
-      "Dinner is on me tonight! (Well, technically on your gains lol)",
-      "I just bought that designer bag I wanted. We can afford it now, right?",
-    ],
-    NEGATIVE: [
-      "I saw the bank account. Please tell me it's a mistake.",
-      "The mortgage check bounced. What is going on??",
-      "My sister said she saw you looking at 'loss porn' on Reddit. What does that even mean?",
-      "We need to talk. Now.",
-      "Are we going to be able to pay rent this month? I'm getting worried.",
-    ],
-    NEUTRAL: [
-      "Hope you're having a good day at 'work', honey!",
-      "Don't forget to pick up milk on your way back from the 'moon'.",
-      "Are you still staring at those lines on the screen? Dinner's ready.",
-      "How's the 'investing' going? Seen any big moves today?",
-      "Just saw a commercial for some stock app. Made me think of you.",
-    ],
-  },
+export function getWifeBracket(netWorthInCents: number): WifeBracket {
+  return WIFE_BRACKETS.find(b => netWorthInCents >= b.min && netWorthInCents < b.max)?.key || 'BASELINE';
+}
+
+export const WIFE_MESSAGES: Record<WifeBracket, string[]> = {
+  BANKRUPT: [
+    "I've filed the papers. You're a monster.",
+    "I'm at my sister's. Don't call me.",
+    "The kids are crying. You gambled away the mortgage.",
+    "My boyfriend said you can sleep in his car tonight. Maybe.",
+    "I saw the eviction notice. I hope you're happy with your 'options'.",
+  ],
+  BROKE: [
+    "I saw the bank statement. We have $40 left.",
+    "I'm using the last of our savings to buy groceries. What happened?",
+    "The credit card was declined at the pharmacy. Explain this.",
+    "How could you do this to us? We had a future.",
+    "I'm looking for a second job. You should do the same.",
+  ],
+  STRUGGLING: [
+    "No more 'investing'. Get a job at Wendy's.",
+    "We can't afford the heater this month. Wear a sweater.",
+    "I'm selling my jewelry on eBay. Thanks for that.",
+    "Is this ever going to end? I'm exhausted.",
+    "Stop looking at those charts and go find some real work.",
+  ],
+  WORRIED: [
+    "I'm skipping lunch to save money. Happy?",
+    "Why are we always on the edge? I can't sleep anymore.",
+    "I saw your 'loss porn' folder. It's not funny, it's our life.",
+    "We need a miracle, not a 'short squeeze'.",
+    "Every time your phone buzzes, I get a panic attack.",
+  ],
+  CONCERNED: [
+    "Why is the credit card declined? Answer me.",
+    "I'm worried about the kids' college fund. Did you touch it?",
+    "You're acting strange. Is everything okay with the money?",
+    "Let's just put what's left into a savings account. Please.",
+    "I don't trust this 'market' of yours anymore.",
+  ],
+  BASELINE: [
+    "Hope your little game is going okay. Milk's out.",
+    "Hope you're having a good day at 'work', honey!",
+    "Don't forget to pick up milk on your way back from the 'moon'.",
+    "Are you still staring at those lines on the screen? Dinner's ready.",
+    "How's the 'investing' going? Seen any big moves today?",
+  ],
+  COMFORTABLE: [
+    "Did you actually make money today? Really?",
+    "I saw the balance is up. Maybe we can finally get that new couch?",
+    "You seem less stressed. Market treating you well?",
+    "Let's go out for a decent dinner tonight. Nothing fancy.",
+    "I'm starting to think you might actually know what you're doing.",
+  ],
+  WELL_OFF: [
+    "I saw a nice SUV today. We should look at it.",
+    "Honey, I'm thinking about that vacation we talked about.",
+    "You're doing great! I told my mom you're a 'trader' now.",
+    "The neighbors asked how we're affording the new deck. I just winked.",
+    "Let's upgrade the TV. I think we've earned it.",
+  ],
+  RICH: [
+    "Honey! Let's go to that fancy steakhouse!",
+    "I'm looking at first-class tickets to Hawaii. What do you think?",
+    "We should start looking at bigger houses. This place is getting small.",
+    "I just bought that designer bag I wanted. We can afford it now!",
+    "You're a genius! How did you pick that stock?",
+  ],
+  MILLIONAIRE: [
+    "I'm telling everyone you're a genius.",
+    "We're millionaires! I can't believe it! Should I quit my job?",
+    "I just booked a week at the Ritz. Pack your bags, millionaire!",
+    "Is it time to buy that boat you always wanted?",
+    "My sister is so jealous right now. I love it.",
+  ],
+  MULTI_MILLIONAIRE: [
+    "I just ordered a custom walk-in closet. Love you!",
+    "Let's buy a vacation home in the Hamptons. Or maybe Aspen?",
+    "I'm looking at private schools for the kids. Only the best.",
+    "You should start a hedge fund. You're better than those Wall Street guys.",
+    "I think we need a full-time chef. What do you think?",
+  ],
+  DECA_MILLIONAIRE: [
+    "Let's buy the house next door for my parents.",
+    "I saw a beautiful yacht today. It's only $15 million. A steal!",
+    "Do we really need to fly commercial anymore? Let's look at NetJets.",
+    "I'm donating a wing to the local hospital. Our name will be on it!",
+    "I love our new life. You're my hero.",
+  ],
+  CENT_MILLIONAIRE: [
+    "Is a private jet too much? I don't care.",
+    "I'm thinking about buying an island. A small one.",
+    "Our accountant says we're making more in interest than we can spend.",
+    "Let's host a gala for charity. We can invite the governor.",
+    "I just bought a vintage Ferrari. It matches your eyes.",
+  ],
+  BILLIONAIRE: [
+    "I'm bored. Should we buy a small country?",
+    "The yacht is finally ready. See you in Monaco!",
+    "I'm thinking of starting a space program. Why let Elon have all the fun?",
+    "We're billionaires. Does anything even matter anymore?",
+    "I love you more than all our billions. (But the billions are nice too).",
+  ],
+};
+
+export const MESSAGE_TEMPLATES: Record<Exclude<TemplateCategory, 'WIFE'>, Record<PerformanceTier, string[]>> = {
   GURU: {
     POSITIVE: [
       "My charts were 100% accurate. Who else is printing money today? 🤑",
@@ -205,7 +287,38 @@ export const GURU_PREDICTIONS = {
 };
 
 export function getRandomTemplate(category: TemplateCategory, tier: PerformanceTier, context: TemplateContext = {}): string {
-  const templates = MESSAGE_TEMPLATES[category][tier];
+  let templates: string[] = [];
+  
+  if (category === 'WIFE') {
+    // If we call getRandomTemplate with WIFE, we default to BASELINE if netWorth context is missing
+    // or we should have a specific function for WIFE.
+    // The plan says: Update getRandomTemplate to handle the WIFE category separately by using getWifeBracket
+    // or create a new getRandomWifeTemplate function.
+    
+    // If netWorth is provided in context as a string, we parse it.
+    // Otherwise we might need to change the signature or provide netWorth separately.
+    const netWorthCents = context.netWorth ? parseInt(context.netWorth) : 10000000; // default to $100k
+    const bracket = getWifeBracket(netWorthCents);
+    templates = WIFE_MESSAGES[bracket];
+  } else {
+    templates = (MESSAGE_TEMPLATES as any)[category][tier];
+  }
+
+  let template = templates[Math.floor(Math.random() * templates.length)];
+  
+  // Replace placeholders
+  Object.entries(context).forEach(([key, value]) => {
+    if (value) {
+      template = template.replace(new RegExp(`{${key}}`, 'g'), value);
+    }
+  });
+  
+  return template;
+}
+
+export function getRandomWifeTemplate(netWorthInCents: number, context: TemplateContext = {}): string {
+  const bracket = getWifeBracket(netWorthInCents);
+  const templates = WIFE_MESSAGES[bracket];
   let template = templates[Math.floor(Math.random() * templates.length)];
   
   // Replace placeholders
@@ -223,3 +336,4 @@ export function getRandomPrediction(sentiment: 'BULLISH' | 'BEARISH', ticker: st
   let template = templates[Math.floor(Math.random() * templates.length)];
   return template.replace(/{ticker}/g, ticker);
 }
+
