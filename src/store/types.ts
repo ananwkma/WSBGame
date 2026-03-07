@@ -48,6 +48,22 @@ export interface StockData {
 
 export type FeedbackType = 'positive' | 'negative' | 'neutral';
 
+export type WifeBracket = 
+  | 'BANKRUPT' 
+  | 'BROKE' 
+  | 'STRUGGLING' 
+  | 'WORRIED' 
+  | 'CONCERNED' 
+  | 'BASELINE' 
+  | 'COMFORTABLE' 
+  | 'WELL_OFF' 
+  | 'RICH' 
+  | 'MILLIONAIRE' 
+  | 'MULTI_MILLIONAIRE' 
+  | 'DECA_MILLIONAIRE' 
+  | 'CENT_MILLIONAIRE' 
+  | 'BILLIONAIRE';
+
 export type GameStatus = 'playing' | 'ended';
 export type EndingType = 'MOON' | 'LEGEND' | 'MENDYS';
 
@@ -90,6 +106,8 @@ export interface GameEvent {
 
 export interface GameState {
   cash: number; // in cents
+  sharkDebt: number; // separate high-interest debt
+  isMarginCall: boolean; // groundwork for margin mechanics
   holdings: Record<StockTicker, number>;
   optionsHoldings: OptionContract[];
   stocks: Record<StockTicker, StockData>;

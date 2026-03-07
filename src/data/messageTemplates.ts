@@ -1,3 +1,5 @@
+import { WifeBracket } from '../store/types';
+
 export type TemplateCategory = 'WIFE' | 'GURU' | 'APES' | 'BROKERAGE' | 'IRS' | 'LAMBO' | 'STALKER' | 'COWORKER';
 export type PerformanceTier = 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
 
@@ -7,6 +9,23 @@ export interface TemplateContext {
   percentage?: string;
   netWorth?: string;
 }
+
+export const WIFE_BRACKETS: { min: number; max: number; key: WifeBracket }[] = [
+  { min: -Infinity, max: 0, key: 'BANKRUPT' },
+  { min: 0, max: 1000000, key: 'BROKE' }, // $10k
+  { min: 1000000, max: 2500000, key: 'STRUGGLING' }, // $25k
+  { min: 2500000, max: 5000000, key: 'WORRIED' }, // $50k
+  { min: 5000000, max: 7500000, key: 'CONCERNED' }, // $75k
+  { min: 7500000, max: 12500000, key: 'BASELINE' }, // $125k
+  { min: 12500000, max: 25000000, key: 'COMFORTABLE' }, // $250k
+  { min: 25000000, max: 50000000, key: 'WELL_OFF' }, // $500k
+  { min: 50000000, max: 100000000, key: 'RICH' }, // $1M
+  { min: 100000000, max: 500000000, key: 'MILLIONAIRE' }, // $5M
+  { min: 500000000, max: 2500000000, key: 'MULTI_MILLIONAIRE' }, // $25M
+  { min: 2500000000, max: 10000000000, key: 'DECA_MILLIONAIRE' }, // $100M
+  { min: 10000000000, max: 100000000000, key: 'CENT_MILLIONAIRE' }, // $1B
+  { min: 100000000000, max: Infinity, key: 'BILLIONAIRE' },
+];
 
 export const MESSAGE_TEMPLATES: Record<TemplateCategory, Record<PerformanceTier, string[]>> = {
   WIFE: {
