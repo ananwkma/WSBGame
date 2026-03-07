@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GameStore, StockTicker, GameEvent, EndingType, StockData } from './types';
 import { generateHistoricalData, calculateBS } from '../utils/marketUtils';
+import { getRandomTemplate, getRandomPrediction, PerformanceTier } from '../data/messageTemplates';
 
 const INITIAL_EVENTS: GameEvent[] = [
   {
@@ -262,6 +263,7 @@ const getInitialState = () => {
       '$POPC': 0,
       '$APE': 0,
     } as Record<StockTicker, number>,
+    guruPrediction: null,
   };
 };
 
@@ -543,7 +545,7 @@ export const useGameStore = create<GameStore>()(
       },
 
       nextTurn: () => {
-        const { turn, day, stocks, eventQueue, cash, holdings, optionsHoldings, karma, triggerFlash, addPopup, processEvents, getNetWorth } = get();
+        const { turn, day, stocks, eventQueue, cash, holdings, optionsHoldings, karma, triggerFlash, addPopup, processEvents, getNetWorth, guruPrediction } = get();
         
         const prevNetWorth = getNetWorth();
 
@@ -679,22 +681,26 @@ export const useGameStore = create<GameStore>()(
         const tickers: StockTicker[] = ['$GAME', '$POPC', '$APE'];
         const getRandomTicker = () => tickers[Math.floor(Math.random() * tickers.length)];
 
-        // GURU
-        const predictionTicker = getRandomTicker();
-        const nextStockState = nextStocks[predictionTicker];
-        const prevPrice = stocks[predictionTicker].currentPrice;
-        const willMoonGuru = nextStockState.currentPrice > prevPrice;
-        const isRightGuru = Math.random() < 0.7;
-        const adviceMoonGuru = isRightGuru ? willMoonGuru : !willMoonGuru;
+        // GURU LOGIC
+        let wasGuruCorrect = null;
+        if (guruPrediction) {
+          const actualPrice = nextStocks[guruPrediction.ticker].currentPrice;
+          const prevPriceAtPrediction = stocks[guruPrediction.ticker].currentPrice;
+          const actuallyMooned = actualPrice > prevPriceAtPrediction;
+          wasGuruCorrect = guruPrediction.sentiment === 'BULLISH' ? actuallyMooned : !actuallyMooned;
+        }
 
-        const guruPhrases = adviceMoonGuru 
-          ? [`My charts say ${predictionTicker} breakout tomorrow. 🚀`, `Whales accumulating ${predictionTicker}.`, `${predictionTicker} bullish cross.`, `Tip: ${predictionTicker} to the moon!`, `Ignore FUD, ${predictionTicker} is UP.`]
-          : [`${predictionTicker} looking weak. 📉`, `Massive dump coming for ${predictionTicker}.`, `Stay away from ${predictionTicker}.`, `SELL ${predictionTicker}!`, `Bear flag on ${predictionTicker}.` ];
+        const guruTier: PerformanceTier = wasGuruCorrect === true ? 'POSITIVE' : wasGuruCorrect === false ? 'NEGATIVE' : 'NEUTRAL';
+        const guruCommentary = getRandomTemplate('GURU', guruTier);
+
+        const predictionTicker = getRandomTicker();
+        const sentiment = Math.random() > 0.5 ? 'BULLISH' : 'BEARISH';
+        const predictionText = getRandomPrediction(sentiment, predictionTicker);
 
         const guruMessage = { 
           id: `guru-${nextTurnNum}`, 
           sender: 'Crypto Guru', 
-          text: guruPhrases[Math.floor(Math.random() * guruPhrases.length)],
+          text: `${guruCommentary} ${predictionText}`,
           day: nextDayNum
         };
 
@@ -704,24 +710,8 @@ export const useGameStore = create<GameStore>()(
 
         // WIFE SENTIMENT
         const performance = netWorth / 10000000; // relative to starting $100k
-        let wifeText = "Hope you're having a good day at 'work', honey!";
-        if (performance > 1.2) {
-          const positives = [
-            "Honey, I'm so proud of you! I'm looking at houses in the Hamptons.",
-            "Did you see that new Tesla? I think it would look great in our driveway.",
-            "I told my mom you're a financial genius. Don't make me a liar!",
-            "Dinner is on me tonight! (Well, technically on your gains lol)"
-          ];
-          wifeText = positives[Math.floor(Math.random() * positives.length)];
-        } else if (performance < 0.8) {
-          const negatives = [
-            "I saw the bank account. Please tell me it's a mistake.",
-            "The mortgage check bounced. What is going on??",
-            "My sister said she saw you looking at 'loss porn' on Reddit. What does that even mean?",
-            "We need to talk. Now."
-          ];
-          wifeText = negatives[Math.floor(Math.random() * negatives.length)];
-        }
+        const wifeTier: PerformanceTier = performance > 1.2 ? 'POSITIVE' : performance < 0.8 ? 'NEGATIVE' : 'NEUTRAL';
+        const wifeText = getRandomTemplate('WIFE', wifeTier);
 
         const wifeMessage = {
           id: `wife-day-${nextDayNum}`,
@@ -742,18 +732,12 @@ export const useGameStore = create<GameStore>()(
           const postTicker = getRandomTicker();
           const pNextStock = nextStocks[postTicker];
           const pPrevPrice = stocks[postTicker].currentPrice;
-          const willMoonForum = pNextStock.currentPrice > pPrevPrice;
-          const isRightForum = Math.random() < 0.6; // 60% accurate
-          const adviceMoonForum = isRightForum ? willMoonForum : !willMoonForum;
-
-          const forumPhrases = adviceMoonForum
-            ? [`Just bought ${postTicker}. YOLO!`, `${postTicker} is basically free.`, `${postTicker} to $1000!`, `Short squeeze on ${postTicker}!!`, `All in on ${postTicker}. LFG.`]
-            : [`Who else is bagholding ${postTicker}? 🤡`, `${postTicker} is dead?`, `Bad picks on ${postTicker}.`, `Selling ${postTicker} for gum.`, `🐻 Gang was right about ${postTicker}.` ];
+          const pTier: PerformanceTier = pNextStock.currentPrice > pPrevPrice ? 'POSITIVE' : pNextStock.currentPrice < pPrevPrice ? 'NEGATIVE' : 'NEUTRAL';
 
           dailyForumPosts.push({
             id: `forum-${nextTurnNum}-${i}`,
             user: users[Math.floor(Math.random() * users.length)],
-            title: forumPhrases[Math.floor(Math.random() * forumPhrases.length)],
+            title: getRandomTemplate('APES', pTier, { ticker: postTicker }),
             upvotes: Math.floor(Math.random() * 5000) + 100,
           });
         }
@@ -787,6 +771,12 @@ export const useGameStore = create<GameStore>()(
           forumPosts: [...dailyForumPosts, ...newForumPosts],
           netWorthHistory: [...state.netWorthHistory, { turn: nextTurnNum, value: netWorth }],
           tradeHistory: [...newTradeEntries, ...state.tradeHistory],
+          guruPrediction: {
+            ticker: predictionTicker,
+            sentiment,
+            day: nextDayNum,
+            wasCorrect: wasGuruCorrect
+          }
         }));
         
         triggerFlash('neutral');

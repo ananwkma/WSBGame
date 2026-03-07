@@ -107,6 +107,12 @@ export interface GameState {
   netWorthHistory: NetWorthPoint[];
   tradeHistory: TradeEntry[];
   costBasis: Record<StockTicker, number>;
+  guruPrediction: {
+    ticker: StockTicker;
+    sentiment: 'BULLISH' | 'BEARISH';
+    day: number;
+    wasCorrect: boolean | null;
+  } | null;
 }
 
 export interface GameActions {
