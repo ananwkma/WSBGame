@@ -11,53 +11,34 @@
 - [x] **Phase 8: Messaging Overhaul & Chart Fix** - Threaded messaging, unread indicators, dynamic Wife dialogue, and fixing the chart line color bug.
 - [x] **Phase 9: Accurate Options Engine** - Implement Black-Scholes model, updated Greeks, and IV dynamics (IV Crush).
 - [x] **Phase 10: Social Expansion & GuruTube Overhaul** - Dynamic GuruTube UI (charts, marquees, emotions) and high-volume narrative templates.
+- [x] **Phase 11: Granular Narrative & Debt Foundation** - 14-tier narrative brackets, 800+ message templates, and groundwork for loans/debt.
 
 ## Phase Details
 
-### Phase 8: Messaging Overhaul & Chart Fix
-**Goal**: Overhaul the social layer into a modern threaded messaging app and fix the persistent green chart bug.
-**Depends on**: Phase 7
-**Requirements**: NARR-04, NARR-05, VIS-08
+### Phase 11: Granular Narrative & Debt Foundation
+**Goal**: Implement a highly granular, 14-bracket narrative system for the Wife and massively expand message variety for all characters.
+**Depends on**: Phase 10
+**Requirements**: NARR-08, NARR-09, MECH-01
 **Success Criteria**:
-  1. Net Worth chart turns red correctly when daily performance is negative.
-  2. Messaging app features a contact list with avatars, previews, and unread badges.
-  3. Clicking a contact opens a full thread view with a "New Messages" separator line.
-  4. Contacts are auto-sorted with the most recent activity at the top.
-  5. The "Wife" character sends daily messages that react dynamically to the player's Net Worth (Starting: $100k).
+  1. Wife character has 14 distinct Net Worth brackets ranging from Bankrupt (<$0) to Billionaire (>$1B).
+  2. Each Wife bracket contains at least 25 unique message templates (350 total).
+  3. Other characters (Guru, Apes, etc.) have 25 unique templates per sentiment tier.
+  4. Message generation logic supports exact numeric range lookups.
+  5. Foundation laid for "Shark Loans" mechanic (state tracking for debt).
 **Plans**:
-- [x] 8-01-PLAN.md — Fix: PriceChart Color Logic & Duplicate Values.
-- [x] 8-02-PLAN.md — State: Threaded Messaging & Wife Sentiment Engine.
-- [x] 8-03-PLAN.md — UI: Contact List & Thread Detail View.
+- [x] 11-01-PLAN.md — Logic: Range-Based Template Selector & Types.
+- [x] 11-02-PLAN.md — Content: The Great Message Expansion (Wife - 350 texts).
+- [x] 11-03-PLAN.md — Content: Supporting Cast Expansion (500+ texts).
 
-### Phase 9: Accurate Options Engine
-**Goal**: Replace the simplified options pricing model with a mathematically consistent Black-Scholes implementation.
-**Depends on**: Phase 8
-**Requirements**: TRADE-09, TRADE-10, TRADE-11, TRADE-12
+### Phase 12: Multiple Endings Expansion
+**Goal**: Replace the 3-ending system with 10 distinct, flavored endings based on varied conditions — net worth thresholds, trading behavior, karma, debt, and other playstyle signals.
+**Depends on**: Phase 11
+**Requirements**: NARR-10
 **Success Criteria**:
-  1. Options premiums calculated via Black-Scholes approximation.
-  2. Greeks (Delta, Gamma, Theta, Vega) updated based on the new model.
-  3. Each stock has a dynamic Implied Volatility (IV) value.
-  4. "IV Crush" logic implemented for narrative-driven volatility spikes/drops.
-  5. UI updated to display IV and Vega for better player visibility.
-**Plans**:
-- [x] 09-01-PLAN.md — Logic: Black-Scholes Engine & Normal CDF.
-- [x] 09-02-PLAN.md — State: Dynamic IV & IV Crush Logic.
-- [x] 09-03-PLAN.md — UI: IV Indicators & Vega Display.
-
-### Phase 10: Social Expansion & GuruTube Overhaul
-**Goal**: Overhaul GuruTube into a high-energy financial news parody and massively expand the narrative content.
-**Depends on**: Phase 9
-**Requirements**: NARR-06, NARR-07, VIS-09
-**Success Criteria**:
-  1. GuruTube features dynamic SVG mini-charts that reflect real stock performance.
-  2. Multiple ticker marquees scroll across the GuruTube UI with live stock data.
-  3. The Guru character has at least 4 distinct emotional states tied to their current prediction.
-  4. Daily text volume increased to 2-4 messages per turn.
-  5. Message variety improved via a new template system in `src/data/messageTemplates.ts`.
-**Plans**:
-- [x] 10-01-PLAN.md — UI: GuruTube Visual Overhaul (SVG Charts & Marquees).
-- [x] 10-02-PLAN.md — Logic: Guru Emotions & Narrative Template System.
-- [x] 10-03-PLAN.md — Content: High-Volume Message Generation & Polish.
+  1. At least 10 unique endings exist, each with its own title, description, and visual treatment.
+  2. Each ending has a distinct trigger condition (not all net-worth-gated).
+  3. Ending detection evaluates all conditions and picks the most specific match.
+  4. Existing MOON / LEGEND / MENDYS endings are replaced or absorbed.
 
 ## Progress Table
 
@@ -74,4 +55,5 @@
 | 8: Messaging & Chart | 3/3 | Completed | 2026-03-06 |
 | 9: Options Engine | 3/3 | Completed | 2026-03-06 |
 | 10: Social & Guru | 3/3 | Completed | 2026-03-06 |
+| 12: Multiple Endings | 0/? | Planned | — |
 
