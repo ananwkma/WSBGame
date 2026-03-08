@@ -39,6 +39,11 @@
   2. Each ending has a distinct trigger condition (not all net-worth-gated).
   3. Ending detection evaluates all conditions and picks the most specific match.
   4. Existing MOON / LEGEND / MENDYS endings are replaced or absorbed.
+**Plans**: 3 plans
+**Plan list**:
+- [ ] 12-01-PLAN.md — State layer: EndingType union (10 values), peakOpportunityCost field, 10-ending detection cascade in useGameStore
+- [ ] 12-02-PLAN.md — Content layer: ENDING_CONTENT rebuild (10 entries with WSB copy + ASCII art), .ending-ascii CSS class
+- [ ] 12-03-PLAN.md — Verification: stale-reference audit, tsc clean build, human visual check of ending screens
 
 ## Progress Table
 
@@ -55,5 +60,5 @@
 | 8: Messaging & Chart | 3/3 | Completed | 2026-03-06 |
 | 9: Options Engine | 3/3 | Completed | 2026-03-06 |
 | 10: Social & Guru | 3/3 | Completed | 2026-03-06 |
-| 12: Multiple Endings | 0/? | Planned | — |
+| 12: Multiple Endings | 0/3 | Planned | — |
 
