@@ -11,17 +11,17 @@
 - [x] **Phase 8: Messaging Overhaul & Chart Fix**
 - [x] **Phase 9: Accurate Options Engine**
 - [x] **Phase 10: Social Expansion & GuruTube Overhaul**
-  - [x] **Visual Overhaul**: GuruTube now features dynamic SVG mini-charts and CSS-animated ticker marquees.
-  - [x] **Reactive Guru**: The Guru character's emoji expression now changes based on their prediction accuracy and market movement.
-  - [x] **Narrative Templates**: Implemented a scalable template system in `messageTemplates.ts` for varied, performance-based dialogue.
-  - [x] **Scaled Engagement**: Daily message volume increased to 2-4 texts per turn, featuring random contacts like the IRS and Lambo dealers.
+- [x] **Phase 11: Granular Narrative & Debt Foundation**
+  - [x] **14-Tier Wife Brackets**: Implemented specific narrative tones for net worth ranges from "Bankrupt" to "Billionaire".
+  - [x] **Massive Content Expansion**: Added 875+ unique message templates, with 25 variations for every character and sentiment tier.
+  - [x] **Range-Based Logic**: Refactored the narrative engine to select messages based on exact financial values rather than simple sentiment.
+  - [x] **Debt Foundation**: Initialized `sharkDebt` state to prepare for future loan mechanics.
 
 ## Recent Changes
-- Created `MiniChart` and `StockMarquee` components for high-energy laptop visuals.
-- Implemented a robust narrative template engine using randomized performance tiers.
-- Integrated `guruPrediction` tracking to drive emotional states in GuruTube.
-- Expanded character roster with spontaneous random contacts.
-- Standardized character avatars and unread badge styling in the Phone app.
+- Populated `messageTemplates.ts` with over 800 new lines of dialogue.
+- Updated `useGameStore` to pass `netWorth` context to the message generator.
+- Defined strict numeric ranges for `WifeBracket` types.
+- Added `sharkDebt` field to the global store types.
 
 ## Current Focus
-- Phase 10 complete. Social layer and visual world-building are significantly enhanced.
+- Phase 11 complete. Narrative depth is now maximized. Ready for loan/debt implementation.
