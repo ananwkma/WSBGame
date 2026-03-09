@@ -148,9 +148,11 @@ export const calculateOptionPrice = (price: number, strike: number, type: 'CALL'
   return isNaN(result) ? 0 : result;
 };
 
-export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, iv: number, heldOptions: any[] = []) => {
+export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, iv: number, currentDay: number, heldOptions: any[] = []) => {
   const roundTo = 500; // $5.00 increments
-  const t = 3/252; // Options in the chain are 3DTE by default
+  // All options now expire at the end of the game (Day 11)
+  const daysToExpiry = Math.max(1, 11 - currentDay);
+  const t = daysToExpiry / 252; 
   
   // 1. Generate standard OTM strikes
   const otmStrikes: number[] = [];
@@ -220,6 +222,9 @@ const getInitialState = () => {
 
   return {
     cash: 10000000, // $100,000.00
+    sharkDebt: 0,
+    peakOpportunityCost: 0,
+    isMarginCall: false,
     turn: 1,
     day: 1,
     hype: 0,
@@ -255,6 +260,7 @@ const getInitialState = () => {
     } as Record<StockTicker, StockData>,
     gameStatus: 'playing' as const,
     endingType: null as EndingType | null,
+    finalNetWorth: null as number | null,
     lastFlash: null as { type: any; timestamp: number } | null,
     popups: [] as any[],
     netWorthHistory: [{ turn: 1, value: 10000000 }], // Start with initial cash
@@ -278,6 +284,8 @@ export const useGameStore = create<GameStore>()(
         set(getInitialState());
         localStorage.removeItem('wsb-trader-save');
       },
+
+      getOpportunityCost: () => get().peakOpportunityCost,
 
       triggerFlash: (type) => {
         set({ lastFlash: { type, timestamp: Date.now() } });
@@ -345,9 +353,12 @@ export const useGameStore = create<GameStore>()(
       },
 
       buyOption: (ticker, type, amount, strikePrice, greeks) => {
-        const { cash, stocks, day, tradeHistory, hype, triggerFlash, addPopup } = get();
+        const { cash, stocks, day, hype, triggerFlash, addPopup } = get();
         const stock = stocks[ticker];
-        const tInitial = 3/252; // New options are 3DTE
+
+        // All options now expire at the end of the game (Day 11)
+        const daysToExpiry = Math.max(1, 11 - day);
+        const tInitial = daysToExpiry / 252;
         
         // Use premium from UI if available, otherwise calculate it
         const premiumPerUnit = greeks.premium !== undefined 
@@ -364,7 +375,7 @@ export const useGameStore = create<GameStore>()(
             type,
             strikePrice,
             amount,
-            expiryDay: day + 3, // 3DTE
+            expiryDay: 11, // Final Day Expiry
             premiumPaid: totalCost,
             delta: greeks.delta,
             gamma: greeks.gamma,
@@ -551,12 +562,92 @@ export const useGameStore = create<GameStore>()(
         const prevNetWorth = getNetWorth();
 
         if (day >= 10) {
-          const finalNetWorth = getNetWorth();
-          let ending: EndingType = 'MENDYS';
-          if (finalNetWorth >= 100000000) ending = 'MOON';
-          else if (karma >= 50000 || finalNetWorth <= 0) ending = 'LEGEND';
+          // Settle all options at intrinsic value (not BS market price) before evaluating the ending
+          const optionPayouts = optionsHoldings.reduce((total, option) => {
+            const finalPrice = stocks[option.ticker].currentPrice;
+            const payoff = option.type === 'CALL'
+              ? Math.max(0, Math.floor(finalPrice - option.strikePrice)) * option.amount
+              : Math.max(0, Math.floor(option.strikePrice - finalPrice)) * option.amount;
+            return total + payoff;
+          }, 0);
 
-          set({ gameStatus: 'ended', endingType: ending });
+          const stockValue = (Object.keys(holdings) as StockTicker[]).reduce((total, ticker) => {
+            return total + (stocks[ticker].currentPrice * holdings[ticker]);
+          }, 0);
+
+          const settledNetWorth = cash + optionPayouts + stockValue;
+
+          // Compute peakOpportunityCost lazily from trade history using final settled prices
+          const allTradeHistory = get().tradeHistory;
+
+          // Stock SELL entries: compute per-ticker cumulative (all sells of same ticker) then take max across tickers
+          const peakFromStocks = (Object.keys(stocks) as StockTicker[]).reduce((peak, ticker) => {
+            const finalPrice = stocks[ticker].currentPrice; // stocks already at settled state here
+            const tickerSells = allTradeHistory.filter(t => t.type === 'SELL' && t.ticker === ticker);
+            const hypotheticalValue = tickerSells.reduce((sum, t) => sum + (finalPrice * t.amount), 0);
+            return Math.max(peak, hypotheticalValue);
+          }, 0);
+
+          // Option OPTION_SELL entries: use t.totalValue as conservative proxy (strike not stored in TradeEntry)
+          const peakFromOptions = allTradeHistory
+            .filter(t => t.type === 'OPTION_SELL')
+            .reduce((peak, t) => {
+              return Math.max(peak, t.totalValue);
+            }, 0);
+
+          const computedPeakOpportunityCost = Math.max(peakFromStocks, peakFromOptions);
+
+          // 10-ending priority cascade — all thresholds in CENTS (dollar amounts × 100)
+          const BEHAVIOR_WEALTH_CEILING = 10000000; // $100,000 in cents
+          const PAPER_HANDS_OPP_THRESHOLD = 100000000; // $1,000,000 in cents
+
+          let ending: EndingType;
+
+          if (settledNetWorth <= BEHAVIOR_WEALTH_CEILING) {
+            // Check behavior endings first (DEBT_SPIRAL beats PAPER_HANDS)
+            if (get().sharkDebt > settledNetWorth) {
+              ending = 'DEBT_SPIRAL';
+            } else if (settledNetWorth < BEHAVIOR_WEALTH_CEILING && computedPeakOpportunityCost >= PAPER_HANDS_OPP_THRESHOLD) {
+              ending = 'PAPER_HANDS';
+            } else if (settledNetWorth <= 8000000) {
+              // ≤ $80,000
+              ending = 'MENDYS';
+            } else {
+              // $80k–$100k (inclusive of BEHAVIOR_WEALTH_CEILING boundary)
+              ending = 'BREAK_EVEN';
+            }
+          } else {
+            // Player is above $100k — wealth bracket endings
+            if (settledNetWorth < 12000000) {
+              // $100k–$120k → BREAK_EVEN
+              ending = 'BREAK_EVEN';
+            } else if (settledNetWorth < 30000000) {
+              // $120k–$300k → SMALL_WINS
+              ending = 'SMALL_WINS';
+            } else if (settledNetWorth < 100000000) {
+              // $300k–$1M → TENDIES
+              ending = 'TENDIES';
+            } else if (settledNetWorth < 1000000000) {
+              // $1M–$10M → TO_THE_MOON
+              ending = 'TO_THE_MOON';
+            } else if (settledNetWorth < 10000000000) {
+              // $10M–$100M → HEDGE_FUND_DARLING
+              ending = 'HEDGE_FUND_DARLING';
+            } else if (settledNetWorth < 100000000000) {
+              // $100M–$1B → WOLF_OF_WALL_STREET
+              ending = 'WOLF_OF_WALL_STREET';
+            } else {
+              // $1B+ → PRIVATE_ISLAND
+              ending = 'PRIVATE_ISLAND';
+            }
+          }
+
+          set({
+            gameStatus: 'ended',
+            endingType: ending,
+            finalNetWorth: settledNetWorth,
+            peakOpportunityCost: computedPeakOpportunityCost,
+          });
           return;
         }
 
@@ -710,9 +801,9 @@ export const useGameStore = create<GameStore>()(
         }
 
         // WIFE SENTIMENT
-        const performance = netWorth / 10000000; // relative to starting $100k
-        const wifeTier: PerformanceTier = performance > 1.2 ? 'POSITIVE' : performance < 0.8 ? 'NEGATIVE' : 'NEUTRAL';
-        const wifeText = getRandomTemplate('WIFE', wifeTier);
+        // Pass absolute netWorth to support the 14-tier bracket system
+        // The getRandomTemplate function will handle the range logic internally
+        const wifeText = getRandomTemplate('WIFE', 'NEUTRAL', { netWorth: String(netWorth) });
 
         const wifeMessage = {
           id: `wife-day-${nextDayNum}`,
@@ -742,7 +833,8 @@ export const useGameStore = create<GameStore>()(
         const selected = shuffled.slice(0, extraCount);
 
         selected.forEach((contact) => {
-          const contactTier: PerformanceTier = performance > 1.5 ? 'POSITIVE' : performance < 0.5 ? 'NEGATIVE' : 'NEUTRAL';
+          const nwRatio = prevNetWorth > 0 ? netWorth / prevNetWorth : 1;
+          const contactTier: PerformanceTier = nwRatio > 1.5 ? 'POSITIVE' : nwRatio < 0.5 ? 'NEGATIVE' : 'NEUTRAL';
           const text = getRandomTemplate(contact.category, contactTier, { ticker: getRandomTicker() });
           
           if (!newThreads[contact.name]) {
