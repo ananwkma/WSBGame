@@ -17,11 +17,20 @@
   - [x] **Range-Based Logic**: Refactored the narrative engine to select messages based on exact financial values rather than simple sentiment.
   - [x] **Debt Foundation**: Initialized `sharkDebt` state to prepare for future loan mechanics.
 
+## Phase 12: Multiple Endings Expansion (In Progress)
+- [x] **Plan 01 — Type System & Detection Cascade**: Replaced 3-value EndingType with 10-value union; added peakOpportunityCost infrastructure; implemented 10-ending priority cascade in nextTurn() with cents thresholds.
+- [ ] **Plan 02 — EndingScreen UI**: Update EndingScreen.tsx to display all 10 endings.
+
 ## Recent Changes
-- Populated `messageTemplates.ts` with over 800 new lines of dialogue.
-- Updated `useGameStore` to pass `netWorth` context to the message generator.
-- Defined strict numeric ranges for `WifeBracket` types.
-- Added `sharkDebt` field to the global store types.
+- Replaced `EndingType` union (`MOON | LEGEND | MENDYS`) with 10-value union covering full wealth/behavior spectrum.
+- Added `peakOpportunityCost: number` to `GameState` and `getOpportunityCost()` to `GameActions`.
+- Implemented 10-ending priority cascade in `nextTurn()` with behavior overrides (DEBT_SPIRAL, PAPER_HANDS) and wealth brackets (BREAK_EVEN through PRIVATE_ISLAND).
+- Removed stale karma-gated LEGEND ending.
+
+## Key Decisions
+- Conservative proxy (t.totalValue) used for OPTION_SELL opportunity cost since strike price is not stored in TradeEntry.
+- PAPER_HANDS check only applies when settledNetWorth < $100k to avoid false positives for wealthy players.
+- peakOpportunityCost computed lazily at game-end, not tracked mid-game.
 
 ## Current Focus
-- Phase 11 complete. Narrative depth is now maximized. Ready for loan/debt implementation.
+- Phase 12 Plan 01 complete. EndingScreen.tsx (Plan 02) still references old 3 endings and needs updating to consume all 10 EndingType values.
