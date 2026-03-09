@@ -106,3 +106,12 @@ None — no external service configuration required.
 ---
 *Phase: 12-multiple-endings-expansion*
 *Completed: 2026-03-08*
+
+## Self-Check: PASSED
+
+- FOUND: src/components/Feedback/EndingScreen.tsx
+- FOUND: src/styles/pixel.css
+- FOUND: .planning/phases/12-multiple-endings-expansion/12-02-SUMMARY.md
+- FOUND commit: 96af409 (Task 1)
+- FOUND commit: 3a3018d (Task 2)
+- FOUND commit: c6eee58 (docs/metadata)

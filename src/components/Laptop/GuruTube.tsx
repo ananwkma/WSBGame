@@ -31,8 +31,6 @@ export const GuruTube: React.FC = () => {
   
   const threads = useGameStore((state) => state.threads);
   const stocks = useGameStore((state) => state.stocks);
-  const guruPrediction = useGameStore((state) => state.guruPrediction);
-  
   const stockList = useMemo(() => Object.values(stocks), [stocks]);
   
   // Calculate Market Sentiment (Happy if > 50% of stocks are up)
@@ -108,15 +106,26 @@ export const GuruTube: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '40vmin', // Scalable size based on viewport
-            textShadow: '1vmin 1vmin 0px rgba(0,0,0,0.3)',
-            imageRendering: 'pixelated',
             transition: 'transform 0.1s steps(2)',
             transform: frame === 1 ? 'scale(1.05)' : 'scale(1)',
-            lineHeight: 1,
             overflow: 'hidden'
           }}>
-            {getGuruFace()}
+            <svg 
+              viewBox="0 0 100 100" 
+              preserveAspectRatio="xMidYMid meet"
+              style={{ width: '85%', height: '85%', filter: 'drop-shadow(4px 4px 0px rgba(0,0,0,0.3))' }}
+            >
+              <text 
+                x="50" 
+                y="55" 
+                fontSize="80" 
+                textAnchor="middle" 
+                dominantBaseline="middle"
+                style={{ imageRendering: 'pixelated' }}
+              >
+                {getGuruFace()}
+              </text>
+            </svg>
           </div>
           <div className="video-overlay">
             <div className="live-badge">LIVE</div>

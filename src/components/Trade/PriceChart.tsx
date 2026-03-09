@@ -1,11 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { line, curveLinear } from 'd3-shape';
 
 interface PriceChartProps {
   history: any[]; // Can be HistoryPoint[] or NetWorthHistory point
-  width: number;
+  width: number;  // Initial/fallback width
   height: number;
-  color?: string; // Optional override color
+  color?: string;
 }
 
 const formatCurrency = (cents: number) => {
@@ -13,15 +13,28 @@ const formatCurrency = (cents: number) => {
 };
 
 export const PriceChart: React.FC<PriceChartProps> = ({ history, width, height, color }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [renderWidth, setRenderWidth] = useState(width);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect.width;
+      if (w > 0) setRenderWidth(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const chartColor = useMemo(() => {
     if (color) return color;
     if (history.length < 2) return '#e0dbcb';
-    
+
     const getValue = (p: any) => p.price !== undefined ? p.price : p.value;
     const initial = getValue(history[0]);
     const current = getValue(history[history.length - 1]);
-    
+
     return current >= initial ? '#94ba8b' : '#ba8b8b';
   }, [history, color]);
 
@@ -32,15 +45,14 @@ export const PriceChart: React.FC<PriceChartProps> = ({ history, width, height, 
 
     const rawMin = Math.min(...history.map(getValue));
     const rawMax = Math.max(...history.map(getValue));
-    
-    // Round to nice multiples of 10
+
     const minVal = Math.floor(rawMin / 1000) * 1000;
     const maxVal = Math.ceil(rawMax / 1000) * 1000;
     const valRange = maxVal - minVal || 1000;
 
-    const labelWidth = 30;
-    const labelHeight = 15;
-    const chartWidth = width - labelWidth - 10;
+    const labelWidth = 68;
+    const labelHeight = 24;
+    const chartWidth = renderWidth - labelWidth - 10;
     const chartHeight = height - labelHeight - 10;
 
     const xScale = (index: number) => labelWidth + (index / (history.length - 1)) * chartWidth;
@@ -54,7 +66,6 @@ export const PriceChart: React.FC<PriceChartProps> = ({ history, width, height, 
       .y((p) => yScale(getValue(p)))
       .curve(curveLinear);
 
-    // Calculate grid lines
     const yDivisions = 4;
     const yGrid = Array.from({ length: yDivisions + 1 }, (_, i) => {
       const val = minVal + (valRange * i) / yDivisions;
@@ -68,29 +79,27 @@ export const PriceChart: React.FC<PriceChartProps> = ({ history, width, height, 
     });
 
     return { path: lineGenerator(history) || '', yGrid, xGrid, labelHeight, chartHeight };
-  }, [history, width, height]);
+  }, [history, renderWidth, height]);
 
   return (
-    <div style={{ position: 'relative', width, height }}>
-      <svg width={width} height={height}>
-        {/* Grid lines & Labels */}
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <svg width={renderWidth} height={height}>
         {typeof pathData === 'object' && pathData.yGrid.map((g, i) => (
           <React.Fragment key={`y-${i}`}>
-            <line x1="30" y1={g.y} x2={width} y2={g.y} stroke="#706b66" strokeWidth="1" strokeDasharray="2,2" opacity="0.3" />
-            <text x="0" y={g.y + 3} fontSize="6px" fill="#706b66" fontFamily="monospace">{g.label}</text>
+            <line x1="68" y1={g.y} x2={renderWidth} y2={g.y} stroke="#706b66" strokeWidth="1" strokeDasharray="2,2" opacity="0.3" />
+            <text x="1" y={g.y + 4} fontSize="14px" fill="#a89f8c" fontFamily="monospace">{g.label}</text>
           </React.Fragment>
         ))}
         {typeof pathData === 'object' && pathData.xGrid.map((g, i) => (
           <React.Fragment key={`x-${i}`}>
             <line x1={g.x} y1="0" x2={g.x} y2={pathData.chartHeight + 5} stroke="#706b66" strokeWidth="1" strokeDasharray="2,2" opacity="0.3" />
-            <text x={g.x - 5} y={height - 2} fontSize="6px" fill="#706b66" fontFamily="monospace">T{g.label}</text>
+            <text x={g.x - 9} y={height - 4} fontSize="14px" fill="#a89f8c" fontFamily="monospace">T{g.label}</text>
           </React.Fragment>
         ))}
 
-        <line x1="30" y1={typeof pathData === 'object' ? pathData.chartHeight + 5 : height} x2={width} y2={typeof pathData === 'object' ? pathData.chartHeight + 5 : height} stroke="#706b66" strokeWidth="2" />
-        <line x1="30" y1="0" x2="30" y2={typeof pathData === 'object' ? pathData.chartHeight + 5 : height} stroke="#706b66" strokeWidth="2" />
-        
-        {/* The Price Line */}
+        <line x1="68" y1={typeof pathData === 'object' ? pathData.chartHeight + 5 : height} x2={renderWidth} y2={typeof pathData === 'object' ? pathData.chartHeight + 5 : height} stroke="#706b66" strokeWidth="2" />
+        <line x1="68" y1="0" x2="68" y2={typeof pathData === 'object' ? pathData.chartHeight + 5 : height} stroke="#706b66" strokeWidth="2" />
+
         <path
           d={typeof pathData === 'object' ? pathData.path : ''}
           fill="none"

@@ -149,11 +149,11 @@ export const Robbinghood: React.FC = () => {
               <div className="robbinghood-value">{formatCurrency(cash)}</div>
             </div>
 
-            <div className="chart-container" style={{ width: '100%', height: '100px', backgroundColor: '#2b2b26', margin: '12px 0', border: '2px solid #706b66' }}>
-               <PriceChart 
-                 history={liveNetWorthHistory} 
-                 width={300} 
-                 height={100} 
+            <div className="chart-container" style={{ width: '100%', height: '300px', backgroundColor: '#2b2b26', margin: '12px 0', border: '2px solid #706b66' }}>
+               <PriceChart
+                 history={liveNetWorthHistory}
+                 width={300}
+                 height={300}
                />
             </div>
             
@@ -273,11 +273,11 @@ export const Robbinghood: React.FC = () => {
                    )}
                  </div>
 
-                 <div className="chart-container" style={{ width: '100%', height: '120px', backgroundColor: '#2b2b26', marginBottom: '16px', border: '2px solid #706b66' }}>
-                    <PriceChart 
-                      history={stocks[selectedStock].history} 
-                      width={300} 
-                      height={120} 
+                 <div className="chart-container" style={{ width: '100%', height: '360px', backgroundColor: '#2b2b26', marginBottom: '16px', border: '2px solid #706b66' }}>
+                    <PriceChart
+                      history={stocks[selectedStock].history}
+                      width={300}
+                      height={360}
                     />
                  </div>
                  

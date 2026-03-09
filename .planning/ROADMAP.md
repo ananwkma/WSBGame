@@ -12,6 +12,7 @@
 - [x] **Phase 9: Accurate Options Engine** - Implement Black-Scholes model, updated Greeks, and IV dynamics (IV Crush).
 - [x] **Phase 10: Social Expansion & GuruTube Overhaul** - Dynamic GuruTube UI (charts, marquees, emotions) and high-volume narrative templates.
 - [x] **Phase 11: Granular Narrative & Debt Foundation** - 14-tier narrative brackets, 800+ message templates, and groundwork for loans/debt.
+- [x] **Phase 12: Multiple Endings Expansion** - 10 distinct endings with WSB-ironic copy, pixel art sprites, and behavior-based detection cascade.
 
 ## Phase Details
 
@@ -43,7 +44,7 @@
 **Plan list**:
 - [x] 12-01-PLAN.md — State layer: EndingType union (10 values), peakOpportunityCost field, 10-ending detection cascade in useGameStore
 - [x] 12-02-PLAN.md — Content layer: ENDING_CONTENT rebuild (10 entries with WSB copy + ASCII art), .ending-ascii CSS class
-- [ ] 12-03-PLAN.md — Verification: stale-reference audit, tsc clean build, human visual check of ending screens
+- [x] 12-03-PLAN.md — Verification: stale-reference audit, tsc clean build, human visual check of ending screens
 
 ## Progress Table
 
@@ -61,5 +62,5 @@
 | 9: Options Engine | 3/3 | Completed | 2026-03-06 |
 | 10: Social & Guru | 3/3 | Completed | 2026-03-06 |
 | 11: Granular Narrative | 3/3 | Completed | 2026-03-08 |
-| 12: Multiple Endings | 2/3 | In Progress | — |
+| 12: Multiple Endings | 3/3 | Completed | 2026-03-09 |
 
