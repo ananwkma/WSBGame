@@ -65,7 +65,17 @@ export type WifeBracket =
   | 'BILLIONAIRE';
 
 export type GameStatus = 'playing' | 'ended';
-export type EndingType = 'MOON' | 'LEGEND' | 'MENDYS';
+export type EndingType =
+  | 'MENDYS'
+  | 'BREAK_EVEN'
+  | 'SMALL_WINS'
+  | 'TENDIES'
+  | 'TO_THE_MOON'
+  | 'HEDGE_FUND_DARLING'
+  | 'WOLF_OF_WALL_STREET'
+  | 'PRIVATE_ISLAND'
+  | 'DEBT_SPIRAL'
+  | 'PAPER_HANDS';
 
 export interface PopupItem {
   id: string;
@@ -122,6 +132,8 @@ export interface GameState {
   popups: PopupItem[];
   gameStatus: GameStatus;
   endingType: EndingType | null;
+  finalNetWorth: number | null; // settled net worth at game end (intrinsic option value, not BS)
+  peakOpportunityCost: number; // peak hypothetical settled value of sold positions at game-end (cents)
   netWorthHistory: NetWorthPoint[];
   tradeHistory: TradeEntry[];
   costBasis: Record<StockTicker, number>;
@@ -140,11 +152,12 @@ export interface GameActions {
   sellOption: (optionId: string, amount: number) => void;
   getNetWorth: () => number;
   nextTurn: () => void;
-  processEvents: () => void;
+  processEvents: () => { newThreads: Record<string, Thread>; newForumPosts: ForumPost[] };
   triggerFlash: (type: FeedbackType) => void;
   addPopup: (text: string, type: FeedbackType, x?: number, y?: number) => void;
   removePopup: (id: string) => void;
   resetGame: () => void;
+  getOpportunityCost: () => number;
   setThreadRead: (sender: string) => void;
 }
 
