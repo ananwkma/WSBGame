@@ -19,12 +19,14 @@
 - [x] **Phase 12: Multiple Endings Expansion**
   - [x] **Plan 01 — Type System & Detection Cascade**: Replaced 3-value EndingType with 10-value union; added peakOpportunityCost infrastructure; implemented 10-ending priority cascade in nextTurn() with cents thresholds.
   - [x] **Plan 02 — EndingScreen UI**: Rebuilt EndingScreen.tsx with 10 WSB-ironic endings — unique title, description, color, and ASCII art per ending; Record<EndingType, EndingContent> enforces TypeScript exhaustiveness; .ending-ascii CSS class added to pixel.css.
+- [ ] **Phase 14: Shark Loans & Debt Mechanic**
+  - [x] **Plan 01 — Debt Engine**: Full sharkDebt game-loop engine — borrowFromShark action, 20% per-turn compounding, debt-adjusted net worth, correct DEBT_SPIRAL detection, Loan Shark thread, and tiered threatening messages.
 
 ## Recent Changes
-- Rebuilt EndingScreen.tsx with 10-entry Record<EndingType, EndingContent> map replacing the stale 3-entry version (MOON/LEGEND/MENDYS).
-- Each ending has a unique title, WSB-ironic description, distinct color, and 10-15 line ASCII art rendered via <pre className="ending-ascii">.
-- Added .ending-ascii CSS class to pixel.css (monospace, white-space: pre, overflow-x: auto).
-- TypeScript compiles clean (0 errors) — Record<EndingType> enforces exhaustiveness.
+- Implemented full sharkDebt engine: borrowFromShark action, 20% compounding in nextTurn(), getNetWorth() subtracts sharkDebt, DEBT_SPIRAL check uses locally-computed newDebt, Loan Shark thread seeded with intro message, per-turn threat injection via pickSharkMessage.
+- Added borrowFromShark to GameActions interface in types.ts.
+- Added SHARK TemplateCategory and pickSharkMessage helper to messageTemplates.ts with 4-tier threat escalation.
+- TypeScript compiles clean (0 errors).
 
 ## Key Decisions
 - Conservative proxy (t.totalValue) used for OPTION_SELL opportunity cost since strike price is not stored in TradeEntry.
@@ -32,7 +34,10 @@
 - peakOpportunityCost computed lazily at game-end, not tracked mid-game.
 - Emoji in ASCII art replaced with text/symbol alternatives for compatibility with 4-color Game Boy palette filter.
 - ENDING_CONTENT typed as Record<EndingType, EndingContent> so TypeScript enforces exhaustiveness at compile time.
+- newDebt computed as local variable at top of nextTurn() so it is in scope for both the day>=10 branch and the normal-turn set().
+- debtRatio uses post-debt currentNetWorth so ratio correctly exceeds 1.0 when debt outpaces assets.
+- Loan Shark thread seeded in getInitialState() so contact exists before borrowFromShark is ever called.
 
 ## Current Focus
-- Phase 12 complete. All 10 endings have type-system detection (Plan 01) and UI content (Plan 02).
-- Last session: Completed 12-02-PLAN.md (2026-03-08)
+- Phase 14 Plan 01 complete. SharkDebt engine fully wired into game loop.
+- Last session: Completed 14-01-PLAN.md (2026-03-10)
