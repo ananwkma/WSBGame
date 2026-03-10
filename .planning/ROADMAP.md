@@ -46,6 +46,22 @@
 - [x] 12-02-PLAN.md — Content layer: ENDING_CONTENT rebuild (10 entries with WSB copy + ASCII art), .ending-ascii CSS class
 - [x] 12-03-PLAN.md — Verification: stale-reference audit, tsc clean build, human visual check of ending screens
 
+### Phase 14: Shark Loans & Debt Mechanic
+**Goal**: Make the sharkDebt state functional — add a loan shark accessible via the phone's SMS, with compounding interest each turn. Debt gameplay feeds meaningfully into the DEBT_SPIRAL ending.
+**Depends on**: Phase 12
+**Requirements**: MECH-02
+**Success Criteria**:
+  1. Player can borrow from the loan shark via a dedicated SMS thread on the phone.
+  2. Debt compounds each turn at a punishing rate (configurable, e.g. 20% per turn).
+  3. Loan shark sends threatening messages as debt grows relative to net worth.
+  4. sharkDebt is factored into net worth (reduces it) and displayed clearly in the UI.
+  5. DEBT_SPIRAL ending triggers correctly when debt > net worth at game end.
+**Plans**: 3 plans
+**Plan list**:
+- [ ] 14-01-PLAN.md — Store layer: borrowFromShark action, Loan Shark thread seed, debt compounding, getNetWorth fix, DEBT_SPIRAL fix, SHARK templates
+- [ ] 14-02-PLAN.md — UI layer: SharkLoanPanel in MessageThread, SHARK DEBT row in Portfolio tab, EndingScreen stat
+- [ ] 14-03-PLAN.md — Verification: tsc clean build, human gameplay loop verification (7 checks)
+
 ## Progress Table
 
 
@@ -63,4 +79,5 @@
 | 10: Social & Guru | 3/3 | Completed | 2026-03-06 |
 | 11: Granular Narrative | 3/3 | Completed | 2026-03-08 |
 | 12: Multiple Endings | 3/3 | Completed | 2026-03-09 |
+| 14: Shark Loans | 0/3 | Planned | — |
 
