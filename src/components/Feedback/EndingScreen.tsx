@@ -266,6 +266,7 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({ result }) => {
   const resetGame = useGameStore((state) => state.resetGame);
   const finalNetWorth = useGameStore((state) => state.finalNetWorth) ?? 0;
   const karma = useGameStore((state) => state.karma);
+  const sharkDebt = useGameStore((state) => state.sharkDebt);
   const content = ENDING_CONTENT[result];
 
   return (
@@ -277,6 +278,12 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({ result }) => {
         <div className="ending-stats">
           <StatRow label="FINAL NET WORTH" value={`$${(finalNetWorth / 100).toLocaleString()}`} />
           <StatRow label="KARMA" value={karma.toLocaleString()} />
+          {sharkDebt > 0 && (
+            <div className="stat-row">
+              <span className="stat-label pixel-bold">SHARK DEBT</span>
+              <span className="stat-value" style={{ color: '#ba8b8b' }}>-${((sharkDebt ?? 0) / 100).toLocaleString()}</span>
+            </div>
+          )}
         </div>
         <button className="pixel-button restart-button" onClick={resetGame}>
           RESTART GAME

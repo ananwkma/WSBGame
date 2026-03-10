@@ -11,6 +11,15 @@ import './Robbinghood.css';
 
 type Tab = 'Portfolio' | 'Trade' | 'History';
 
+const STOCK_NAMES: Record<string, string> = {
+  '$GAME':  'GAMEGO INC.',
+  '$POPC':  'POPCORNFLIX MEDIA',
+  '$APE':   'PRIMATE CAPITAL',
+  '$GOOGO': 'GOOGO SEARCH & CLOUD',
+  '$APPO':  'APPO INC.',
+  '$BERG':  'BERGSHIRE HATHAME',
+};
+
 export const Robbinghood: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('Portfolio');
   const [selectedStock, setSelectedStock] = useState<StockTicker | null>(null);
@@ -18,11 +27,11 @@ export const Robbinghood: React.FC = () => {
   const [tradeMode, setTradeMode] = useState<'STOCK' | 'OPTION'>('STOCK');
   const [selectedOptionData, setSelectedOptionData] = useState<any>(null);
   
-  const { 
-    cash, holdings, stocks, 
-    buyStock, sellStock, sellOption, buyOption, 
+  const {
+    cash, holdings, stocks,
+    buyStock, sellStock, sellOption, buyOption,
     getNetWorth, netWorthHistory, optionsHoldings,
-    costBasis, tradeHistory, day
+    costBasis, tradeHistory, day, sharkDebt
   } = useGameStore();
 
   // Reset trade amount when selection changes
@@ -148,6 +157,12 @@ export const Robbinghood: React.FC = () => {
               <div className="robbinghood-label">Buying Power</div>
               <div className="robbinghood-value">{formatCurrency(cash)}</div>
             </div>
+            {sharkDebt > 0 && (
+              <div className="robbinghood-stat">
+                <div className="robbinghood-label">SHARK DEBT</div>
+                <div className="robbinghood-value" style={{ color: '#ba8b8b' }}>-{formatCurrency(sharkDebt)}</div>
+              </div>
+            )}
 
             <div className="chart-container" style={{ width: '100%', height: '300px', backgroundColor: '#2b2b26', margin: '12px 0', border: '2px solid #706b66' }}>
                <PriceChart
@@ -223,11 +238,11 @@ export const Robbinghood: React.FC = () => {
                      
                      return (
                        <li key={stock.ticker} className="robbinghood-list-item" style={{ cursor: 'pointer' }} onClick={() => setSelectedStock(stock.ticker)}>
-                          <span className="ticker">{stock.ticker}</span>
-                          <div style={{ textAlign: 'right' }}>
-                            <span className="price">{formatCurrency(stock.currentPrice)}</span>
-                            <PerformanceIndicator percent={changePercent} showAmount={false} />
-                          </div>
+                         <span className="ticker">{stock.ticker}</span>
+                         <div style={{ textAlign: 'right' }}>
+                           <span className="price">{formatCurrency(stock.currentPrice)}</span>
+                           <PerformanceIndicator percent={changePercent} showAmount={false} />
+                         </div>
                        </li>
                      );
                    })}
@@ -235,26 +250,36 @@ export const Robbinghood: React.FC = () => {
                </>
              ) : (
                <div className="stock-details">
-                 <button className="back-btn" onClick={() => { setSelectedStock(null); setSelectedOptionData(null); }}>← BACK</button>
-                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '8px 0' }}>
-                   <h2 style={{ margin: 0 }}>{selectedStock} - {formatCurrency(currentPrice)}</h2>
-                   {selectedStock && (
-                     <PerformanceIndicator 
-                       percent={calculatePercentChange(
-                         stocks[selectedStock].currentPrice, 
-                         stocks[selectedStock].history.length > 1 
-                           ? stocks[selectedStock].history[stocks[selectedStock].history.length - 2].price 
-                           : stocks[selectedStock].currentPrice
-                       )} 
-                       showAmount={false} 
-                     />
-                   )}
-                   {selectedStock && (
-                     <span style={{ fontSize: '12px', color: '#a89f8c', marginLeft: 'auto', fontWeight: 'bold' }}>
-                       IV: {(stocks[selectedStock].iv * 100).toFixed(0)}%
-                     </span>
-                   )}
-                 </div>
+                 {(() => {
+                   if (!selectedStock) return null;
+                   const hist = stocks[selectedStock].history;
+                   const prevPrice = hist.length > 1 ? hist[hist.length - 2].price : stocks[selectedStock].currentPrice;
+                   const chartColor = stocks[selectedStock].currentPrice >= hist[0].price ? '#94ba8b' : '#ba8b8b';
+                   const changePct = calculatePercentChange(stocks[selectedStock].currentPrice, prevPrice);
+                   return (
+                     <>
+                       <button
+                         className="back-btn"
+                         onClick={() => { setSelectedStock(null); setSelectedOptionData(null); }}
+                         style={{ fontSize: '22px', color: chartColor, background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px 4px', lineHeight: 1 }}
+                       >
+                         &lt;
+                       </button>
+                       <div style={{ margin: '4px 0 8px' }}>
+                         <div style={{ fontSize: '11px', color: '#706b66', fontFamily: 'monospace' }}>{selectedStock}</div>
+                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                           <span style={{ fontSize: '15px', fontWeight: 'bold' }}>
+                             {STOCK_NAMES[selectedStock] ?? selectedStock} &mdash; {formatCurrency(currentPrice)}
+                           </span>
+                           <PerformanceIndicator percent={changePct} showAmount={false} />
+                           <span style={{ fontSize: '11px', color: '#a89f8c', marginLeft: 'auto' }}>
+                             IV: {(stocks[selectedStock].iv * 100).toFixed(0)}%
+                           </span>
+                         </div>
+                       </div>
+                     </>
+                   );
+                 })()}
                  
                  <div style={{ marginBottom: '12px', padding: '8px', backgroundColor: '#3d3d38', border: '1px solid #706b66' }}>
                    <div style={{ fontSize: '10px', color: '#706b66', marginBottom: '4px' }}>YOUR POSITIONS</div>
