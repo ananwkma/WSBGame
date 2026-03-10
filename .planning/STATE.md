@@ -19,13 +19,15 @@
 - [x] **Phase 12: Multiple Endings Expansion**
   - [x] **Plan 01 — Type System & Detection Cascade**: Replaced 3-value EndingType with 10-value union; added peakOpportunityCost infrastructure; implemented 10-ending priority cascade in nextTurn() with cents thresholds.
   - [x] **Plan 02 — EndingScreen UI**: Rebuilt EndingScreen.tsx with 10 WSB-ironic endings — unique title, description, color, and ASCII art per ending; Record<EndingType, EndingContent> enforces TypeScript exhaustiveness; .ending-ascii CSS class added to pixel.css.
-- [ ] **Phase 14: Shark Loans & Debt Mechanic**
+- [x] **Phase 14: Shark Loans & Debt Mechanic**
   - [x] **Plan 01 — Debt Engine**: Full sharkDebt game-loop engine — borrowFromShark action, 20% per-turn compounding, debt-adjusted net worth, correct DEBT_SPIRAL detection, Loan Shark thread, and tiered threatening messages.
+  - [x] **Plan 02 — Shark Loan UI**: SharkLoanPanel in Loan Shark SMS thread with 4 preset borrow buttons and outstanding debt display; SHARK DEBT row in Robbinghood Portfolio tab; SHARK DEBT stat on EndingScreen.
 
 ## Recent Changes
-- Implemented full sharkDebt engine: borrowFromShark action, 20% compounding in nextTurn(), getNetWorth() subtracts sharkDebt, DEBT_SPIRAL check uses locally-computed newDebt, Loan Shark thread seeded with intro message, per-turn threat injection via pickSharkMessage.
-- Added borrowFromShark to GameActions interface in types.ts.
-- Added SHARK TemplateCategory and pickSharkMessage helper to messageTemplates.ts with 4-tier threat escalation.
+- Added SharkLoanPanel inline component to MessageThread.tsx: renders below messages for Loan Shark thread with outstanding debt display and 4 preset borrow buttons ($10k/$25k/$50k/$100k), disabled when game ended.
+- Added SHARK DEBT conditional row to Robbinghood Portfolio tab using red color (#ba8b8b), hidden when sharkDebt === 0.
+- Added SHARK DEBT stat row to EndingScreen.tsx, hidden when sharkDebt === 0.
+- Added shark-loan-panel CSS styles to Phone.css.
 - TypeScript compiles clean (0 errors).
 
 ## Key Decisions
@@ -37,7 +39,8 @@
 - newDebt computed as local variable at top of nextTurn() so it is in scope for both the day>=10 branch and the normal-turn set().
 - debtRatio uses post-debt currentNetWorth so ratio correctly exceeds 1.0 when debt outpaces assets.
 - Loan Shark thread seeded in getInitialState() so contact exists before borrowFromShark is ever called.
+- SharkLoanPanel defined as non-exported inline component; SHARK DEBT placed after Buying Power in Portfolio; EndingScreen uses inline stat-row div for span-level color control.
 
 ## Current Focus
-- Phase 14 Plan 01 complete. SharkDebt engine fully wired into game loop.
-- Last session: Completed 14-01-PLAN.md (2026-03-10)
+- Phase 14 complete. Full shark loan mechanic: engine (14-01) + player-facing UI (14-02).
+- Last session: Completed 14-02-PLAN.md (2026-03-10)
