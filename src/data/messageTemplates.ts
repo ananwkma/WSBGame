@@ -1,6 +1,6 @@
 import type { WifeBracket } from '../store/types';
 
-export type TemplateCategory = 'WIFE' | 'GURU' | 'APES' | 'BROKERAGE' | 'IRS' | 'LAMBO' | 'STALKER' | 'COWORKER';
+export type TemplateCategory = 'WIFE' | 'GURU' | 'APES' | 'BROKERAGE' | 'IRS' | 'LAMBO' | 'STALKER' | 'COWORKER' | 'SHARK';
 export type PerformanceTier = 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
 
 export interface TemplateContext {
@@ -1055,4 +1055,58 @@ export function getRandomPrediction(sentiment: 'BULLISH' | 'BEARISH', ticker: st
   const templates = GURU_PREDICTIONS[sentiment];
   let template = templates[Math.floor(Math.random() * templates.length)];
   return template.replace(/{ticker}/g, ticker);
+}
+
+const SHARK_MESSAGES_MILD = [
+  "Interest is ticking, bud. Don't make me call you.",
+  "Just a friendly reminder: you owe me. Keep it that way.",
+  "I'm a patient man. For now.",
+  "Don't forget about me while you're out there playing with your little stocks.",
+  "Friendly reminder: the clock doesn't stop while the market's closed.",
+];
+
+const SHARK_MESSAGES_SERIOUS = [
+  "You're starting to sweat, aren't you? Good. Pay up.",
+  "My associate is parked outside. He's getting impatient.",
+  "I've been doing this a long time. People who don't pay regret it.",
+  "You owe me big. Don't test my patience.",
+  "I've seen guys lose everything. You're heading that way fast.",
+];
+
+const SHARK_MESSAGES_THREATENING = [
+  "You're running out of runway. I'm not patient.",
+  "Last warning before I start collecting things.",
+  "I've got your address. Just saying.",
+  "Your debt is almost bigger than you. That's not good for you.",
+  "I've broken legs for less. Pay me.",
+];
+
+const SHARK_MESSAGES_DONE = [
+  "You're mine now. The market can't save you.",
+  "Debt exceeds your worth. Time to settle in person.",
+  "You've got nothing left to lose — except your kneecaps.",
+  "Game over. You owe me everything and then some.",
+  "I own you now. Come find me before I find you.",
+];
+
+export function pickSharkMessage(debtRatio: number, debtCents: number): string {
+  const debtFormatted = `$${(debtCents / 100).toLocaleString()}`;
+  let pool: string[];
+
+  if (debtRatio < 0.25) {
+    pool = SHARK_MESSAGES_MILD;
+  } else if (debtRatio < 0.75) {
+    pool = SHARK_MESSAGES_SERIOUS;
+  } else if (debtRatio < 1.0) {
+    pool = SHARK_MESSAGES_THREATENING;
+  } else {
+    pool = SHARK_MESSAGES_DONE;
+  }
+
+  const base = pool[Math.floor(Math.random() * pool.length)];
+  // Append debt amount context on some messages for flavour
+  if (Math.random() < 0.4) {
+    return `${base} You owe ${debtFormatted}.`;
+  }
+  return base;
 }

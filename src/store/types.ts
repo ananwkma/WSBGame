@@ -1,4 +1,4 @@
-export type StockTicker = '$GAME' | '$POPC' | '$APE';
+export type StockTicker = '$GAME' | '$POPC' | '$APE' | '$GOOGO' | '$APPO' | '$BERG';
 
 export type OptionType = 'CALL' | 'PUT';
 
@@ -159,6 +159,7 @@ export interface GameActions {
   resetGame: () => void;
   getOpportunityCost: () => number;
   setThreadRead: (sender: string) => void;
+  borrowFromShark: (amount: number) => void;
 }
 
 export type GameStore = GameState & GameActions;
