@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GameStore, StockTicker, GameEvent, EndingType, StockData } from './types';
 import { generateHistoricalData, calculateBS } from '../utils/marketUtils';
-import { getRandomTemplate, getRandomPrediction } from '../data/messageTemplates';
+import { getRandomTemplate, getRandomPrediction, pickSharkMessage } from '../data/messageTemplates';
 import type { PerformanceTier } from '../data/messageTemplates';
 
 const INITIAL_EVENTS: GameEvent[] = [
@@ -119,10 +119,15 @@ const INITIAL_EVENTS: GameEvent[] = [
   },
 ];
 
-const INITIAL_STOCKS: Record<StockTicker, { price: number, iv: number }> = {
-  '$GAME': { price: 10000, iv: 1.5 },
-  '$POPC': { price: 5000, iv: 0.8 },
-  '$APE': { price: 2500, iv: 3.0 },
+const INITIAL_STOCKS: Record<StockTicker, { price: number, iv: number, minVol: number, maxVol: number, histVol: number }> = {
+  // Meme stocks — wild swings
+  '$GAME': { price: 10000, iv: 1.5, minVol: 0.10, maxVol: 0.50, histVol: 0.20 },
+  '$POPC': { price: 5000,  iv: 0.8, minVol: 0.10, maxVol: 0.50, histVol: 0.20 },
+  '$APE':  { price: 2500,  iv: 3.0, minVol: 0.10, maxVol: 0.50, histVol: 0.20 },
+  // Blue-chip stocks — calm, steady
+  '$GOOGO': { price: 17500, iv: 0.30, minVol: 0.01, maxVol: 0.05, histVol: 0.03 },
+  '$APPO':  { price: 19000, iv: 0.25, minVol: 0.01, maxVol: 0.05, histVol: 0.03 },
+  '$BERG':  { price: 52000, iv: 0.20, minVol: 0.01, maxVol: 0.05, histVol: 0.03 },
 };
 
 // --- FINANCIAL UTILITIES ---
@@ -210,6 +215,14 @@ const getInitialState = () => {
     'Brokerage': { contactName: 'Brokerage', avatar: '🏛️', lastReadDay: 1, messages: [] },
     'Crypto Guru': { contactName: 'Crypto Guru', avatar: '📉', lastReadDay: 1, messages: [] },
     "Wife's Boyfriend": { contactName: "Wife's Boyfriend", avatar: '😎', lastReadDay: 1, messages: [] },
+    'Loan Shark': {
+      contactName: 'Loan Shark',
+      avatar: '🦈',
+      lastReadDay: 1,
+      messages: [
+        { id: 'shark-intro', sender: 'Loan Shark', text: "Heard you been losing big. I got cash, no questions asked. Fast. Easy. Hit me up.", day: 1 }
+      ]
+    },
   };
 
   // Populate initial messages for day 1
@@ -233,31 +246,20 @@ const getInitialState = () => {
     forumPosts: INITIAL_EVENTS.filter(e => e.day === 1 && e.type === 'POST').map(e => e.payload),
     eventQueue: INITIAL_EVENTS,
     holdings: {
-      '$GAME': 0,
-      '$POPC': 0,
-      '$APE': 0,
+      '$GAME': 0, '$POPC': 0, '$APE': 0,
+      '$GOOGO': 0, '$APPO': 0, '$BERG': 0,
     } as Record<StockTicker, number>,
     optionsHoldings: [] as any[],
-    stocks: {
-      '$GAME': {
-        ticker: '$GAME',
-        currentPrice: INITIAL_STOCKS['$GAME'].price,
-        iv: INITIAL_STOCKS['$GAME'].iv,
-        history: generateHistoricalData(INITIAL_STOCKS['$GAME'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
-      },
-      '$POPC': {
-        ticker: '$POPC',
-        currentPrice: INITIAL_STOCKS['$POPC'].price,
-        iv: INITIAL_STOCKS['$POPC'].iv,
-        history: generateHistoricalData(INITIAL_STOCKS['$POPC'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
-      },
-      '$APE': {
-        ticker: '$APE',
-        currentPrice: INITIAL_STOCKS['$APE'].price,
-        iv: INITIAL_STOCKS['$APE'].iv,
-        history: generateHistoricalData(INITIAL_STOCKS['$APE'].price, 20).map(p => ({ ...p, turn: p.turn + 1 })),
-      },
-    } as Record<StockTicker, StockData>,
+    stocks: (Object.keys(INITIAL_STOCKS) as StockTicker[]).reduce((acc, ticker) => {
+      const s = INITIAL_STOCKS[ticker];
+      acc[ticker] = {
+        ticker,
+        currentPrice: s.price,
+        iv: s.iv,
+        history: generateHistoricalData(s.price, 20, s.histVol).map(p => ({ ...p, turn: p.turn + 1 })),
+      };
+      return acc;
+    }, {} as Record<StockTicker, StockData>),
     gameStatus: 'playing' as const,
     endingType: null as EndingType | null,
     finalNetWorth: null as number | null,
@@ -266,9 +268,8 @@ const getInitialState = () => {
     netWorthHistory: [{ turn: 1, value: 10000000 }], // Start with initial cash
     tradeHistory: [],
     costBasis: {
-      '$GAME': 0,
-      '$POPC': 0,
-      '$APE': 0,
+      '$GAME': 0, '$POPC': 0, '$APE': 0,
+      '$GOOGO': 0, '$APPO': 0, '$BERG': 0,
     } as Record<StockTicker, number>,
     guruPrediction: null,
   };
@@ -456,11 +457,11 @@ export const useGameStore = create<GameStore>()(
       },
 
       getNetWorth: () => {
-        const { cash, holdings, stocks, optionsHoldings, day } = get();
+        const { cash, holdings, stocks, optionsHoldings, day, sharkDebt } = get();
         const stockValue = (Object.keys(holdings) as StockTicker[]).reduce((total, ticker) => {
           return total + (stocks[ticker].currentPrice * holdings[ticker]);
         }, 0);
-        
+
         const optionsValue = optionsHoldings.reduce((total, option) => {
           const stock = stocks[option.ticker];
           const tRemaining = Math.max(0.0001, (option.expiryDay - day) / 252);
@@ -468,7 +469,7 @@ export const useGameStore = create<GameStore>()(
           return total + (marketValue * option.amount);
         }, 0);
 
-        return cash + stockValue + optionsValue;
+        return cash + stockValue + optionsValue - sharkDebt;
       },
 
       sellStock: (ticker, amount) => {
@@ -524,6 +525,27 @@ export const useGameStore = create<GameStore>()(
         }
       },
 
+      borrowFromShark: (amount) => {
+        const { cash, sharkDebt, threads, day } = get();
+        const confirmMsg = {
+          id: `shark-borrow-${day}`,
+          sender: 'Loan Shark',
+          text: `Done. $${(amount / 100).toLocaleString()} wired. Don't be late.`,
+          day,
+        };
+        set({
+          cash: cash + amount,
+          sharkDebt: sharkDebt + amount,
+          threads: {
+            ...threads,
+            'Loan Shark': {
+              ...threads['Loan Shark'],
+              messages: [confirmMsg, ...threads['Loan Shark'].messages],
+            },
+          },
+        });
+      },
+
       processEvents: () => {
         const { day, eventQueue, threads, forumPosts } = get();
         const currentEvents = eventQueue.filter((e) => e.day === day);
@@ -558,8 +580,12 @@ export const useGameStore = create<GameStore>()(
 
       nextTurn: () => {
         const { turn, day, stocks, eventQueue, cash, holdings, optionsHoldings, karma, triggerFlash, addPopup, processEvents, getNetWorth, guruPrediction } = get();
-        
+
         const prevNetWorth = getNetWorth();
+
+        const SHARK_INTEREST_RATE = 0.20;
+        const currentDebt = get().sharkDebt;
+        const newDebt = currentDebt > 0 ? Math.round(currentDebt * (1 + SHARK_INTEREST_RATE)) : 0;
 
         if (day >= 10) {
           // Settle all options at intrinsic value (not BS market price) before evaluating the ending
@@ -575,7 +601,7 @@ export const useGameStore = create<GameStore>()(
             return total + (stocks[ticker].currentPrice * holdings[ticker]);
           }, 0);
 
-          const settledNetWorth = cash + optionPayouts + stockValue;
+          const settledNetWorth = cash + optionPayouts + stockValue - newDebt;
 
           // Compute peakOpportunityCost lazily from trade history using final settled prices
           const allTradeHistory = get().tradeHistory;
@@ -605,7 +631,7 @@ export const useGameStore = create<GameStore>()(
 
           if (settledNetWorth <= BEHAVIOR_WEALTH_CEILING) {
             // Check behavior endings first (DEBT_SPIRAL beats PAPER_HANDS)
-            if (get().sharkDebt > settledNetWorth) {
+            if (newDebt > settledNetWorth) {
               ending = 'DEBT_SPIRAL';
             } else if (settledNetWorth < BEHAVIOR_WEALTH_CEILING && computedPeakOpportunityCost >= PAPER_HANDS_OPP_THRESHOLD) {
               ending = 'PAPER_HANDS';
@@ -647,6 +673,7 @@ export const useGameStore = create<GameStore>()(
             endingType: ending,
             finalNetWorth: settledNetWorth,
             peakOpportunityCost: computedPeakOpportunityCost,
+            sharkDebt: newDebt,
           });
           return;
         }
@@ -681,7 +708,8 @@ export const useGameStore = create<GameStore>()(
             nextIv = Math.max(baseIv, nextIv * 0.9); // Slow decay towards base IV
           }
 
-          const volatility = Math.random() * 0.4 + 0.1;
+          const { minVol, maxVol } = INITIAL_STOCKS[ticker];
+          const volatility = Math.random() * (maxVol - minVol) + minVol;
           const direction = Math.random() > 0.5 ? 1 : -1;
           const change = 1 + (volatility * direction);
           let nextPrice = Math.round(stock.currentPrice * change);
@@ -753,7 +781,7 @@ export const useGameStore = create<GameStore>()(
           return total + (marketValue * option.amount);
         }, 0);
 
-        const netWorth = nextCash + stockValue + optionsValue;
+        const netWorth = nextCash + stockValue + optionsValue - newDebt;
         let newKarma = karma;
 
         // --- HYPE LOGIC ---
@@ -814,6 +842,22 @@ export const useGameStore = create<GameStore>()(
 
         if (newThreads['Wife']) {
           newThreads['Wife'].messages = [wifeMessage, ...newThreads['Wife'].messages];
+        }
+
+        // LOAN SHARK THREAT
+        if (newDebt > 0) {
+          const currentNetWorth = nextCash + stockValue + optionsValue - newDebt;
+          const debtRatio = currentNetWorth > 0 ? newDebt / currentNetWorth : 999;
+          const sharkText = pickSharkMessage(debtRatio, newDebt);
+          const sharkMsg = {
+            id: `shark-${nextDayNum}`,
+            sender: 'Loan Shark',
+            text: sharkText,
+            day: nextDayNum,
+          };
+          if (newThreads['Loan Shark']) {
+            newThreads['Loan Shark'].messages = [sharkMsg, ...newThreads['Loan Shark'].messages];
+          }
         }
 
         // --- ADDITIONAL MESSAGES (Plan 10-03) ---
@@ -896,6 +940,7 @@ export const useGameStore = create<GameStore>()(
           karma: newKarma,
           hype: newHype,
           threads: newThreads,
+          sharkDebt: newDebt,
           forumPosts: [...dailyForumPosts, ...newForumPosts],
           netWorthHistory: [...state.netWorthHistory, { turn: nextTurnNum, value: netWorth }],
           tradeHistory: [...newTradeEntries, ...state.tradeHistory],
