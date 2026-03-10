@@ -1,5 +1,40 @@
 import React, { useEffect, useRef } from 'react';
 import type { Thread } from '../../../store/types';
+import { useGameStore } from '../../../store/useGameStore';
+
+const SharkLoanPanel: React.FC = () => {
+  const borrowFromShark = useGameStore((state) => state.borrowFromShark);
+  const sharkDebt = useGameStore((state) => state.sharkDebt);
+  const gameStatus = useGameStore((state) => state.gameStatus);
+
+  const PRESET_AMOUNTS = [1000000, 2500000, 5000000, 10000000]; // $10k, $25k, $50k, $100k in cents
+  const PRESET_LABELS = ['$10k', '$25k', '$50k', '$100k'];
+
+  const isDisabled = gameStatus === 'ended';
+
+  return (
+    <div className="shark-loan-panel">
+      {sharkDebt > 0 && (
+        <div className="shark-debt-display pixel-bold">
+          OUTSTANDING: ${(sharkDebt / 100).toLocaleString()}
+        </div>
+      )}
+      <div className="shark-borrow-label pixel-bold">BORROW:</div>
+      <div className="shark-borrow-buttons">
+        {PRESET_AMOUNTS.map((amount, i) => (
+          <button
+            key={amount}
+            className="shark-borrow-btn pixel-bold"
+            onClick={() => borrowFromShark(amount)}
+            disabled={isDisabled}
+          >
+            {PRESET_LABELS[i]}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 interface MessageThreadProps {
   thread: Thread;
@@ -49,6 +84,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({ thread, initialLas
           );
         })}
       </div>
+      {thread.contactName === 'Loan Shark' && <SharkLoanPanel />}
     </div>
   );
 };

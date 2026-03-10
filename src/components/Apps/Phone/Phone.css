@@ -323,3 +323,44 @@
   color: #ba8b8b;
   z-index: 1;
 }
+
+.shark-loan-panel {
+  padding: 8px;
+  border-top: 2px solid #706b66;
+  background: #1c1c17;
+  flex-shrink: 0;
+}
+.shark-debt-display {
+  color: #ba8b8b;
+  font-size: 10px;
+  margin-bottom: 4px;
+  text-align: center;
+}
+.shark-borrow-label {
+  color: #a89f8c;
+  font-size: 9px;
+  margin-bottom: 4px;
+}
+.shark-borrow-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.shark-borrow-btn {
+  flex: 1;
+  min-width: 40px;
+  padding: 4px 2px;
+  font-size: 9px;
+  background: #2b2b26;
+  border: 1px solid #706b66;
+  color: #ba8b8b;
+  cursor: pointer;
+}
+.shark-borrow-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.shark-borrow-btn:hover:not(:disabled) {
+  background: #3a3a30;
+  border-color: #ba8b8b;
+}
