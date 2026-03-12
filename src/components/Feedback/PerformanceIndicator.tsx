@@ -19,8 +19,9 @@ export const PerformanceIndicator: React.FC<PerformanceIndicatorProps> = ({
   forceSign = true,
 }) => {
   // Determine if positive or negative. Prefer value if both provided.
-  const isPositive = (value !== undefined ? value : (percent || 0)) >= 0;
-  const color = isPositive ? '#94ba8b' : '#ba8b8b';
+  const raw = value !== undefined ? value : (percent || 0);
+  const color = raw === 0 ? '#e0dbcb' : raw > 0 ? '#94ba8b' : '#ba8b8b';
+  const isPositive = raw >= 0;
   const prefix = isPositive && forceSign ? '+' : isPositive ? '' : '-';
 
   const displayPercent = percent !== undefined ? `${prefix}${Math.abs(percent).toFixed(2)}%` : '';

@@ -43,27 +43,28 @@
   display: flex;
   flex-direction: column;
   background-color: #2b2b26;
-  max-width: 120px;
+  min-width: 160px;
+  max-width: 180px;
 }
 
 .chat-header {
   background-color: #706b66;
   color: #e0dbcb;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: bold;
-  padding: 2px 4px;
+  padding: 3px 6px;
   text-align: center;
   border-bottom: 1px solid #2b2b26;
 }
 
 .chat-messages {
   flex: 1;
-  padding: 4px;
+  padding: 6px;
   overflow-y: auto;
-  font-size: 8px;
+  font-size: 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   scrollbar-width: none;
 }
 
@@ -106,23 +107,23 @@
 .live-badge {
   background-color: #e0dbcb; /* Red equivalent in palette */
   color: #2b2b26;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: bold;
-  padding: 1px 3px;
+  padding: 2px 4px;
   border: 1px solid #2b2b26;
 }
 
 .viewer-count {
-  font-size: 8px;
+  font-size: 10px;
   color: #2b2b26;
   background-color: rgba(255, 255, 255, 0.5);
-  padding: 1px 3px;
+  padding: 2px 4px;
 }
 
 .advice-marquee {
   background-color: #2b2b26;
   color: #e0dbcb;
-  height: 20px;
+  height: 24px;
   display: flex;
   align-items: center;
   overflow: hidden;
@@ -132,8 +133,8 @@
 
 .scroll-text {
   padding-left: 100%;
-  animation: scroll-left 10s linear infinite;
-  font-size: 10px;
+  animation: scroll-left 18s linear infinite;
+  font-size: 13px;
   font-weight: bold;
 }
 
@@ -162,13 +163,13 @@
   top: 8px;
   background-color: rgba(43, 43, 38, 0.9);
   border: 1px solid #706b66;
-  padding: 4px;
-  width: 80px;
+  padding: 6px;
+  width: 100px;
   font-family: inherit;
-  font-size: 8px;
+  font-size: 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   z-index: 10;
 }
 

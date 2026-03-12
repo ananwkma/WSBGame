@@ -1,3 +1,7 @@
+* {
+  user-select: none;
+}
+
 :root {
   --tile-size: 8px;
   background-color: #2b2b26;

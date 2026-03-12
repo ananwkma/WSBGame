@@ -4,13 +4,18 @@ import { useGameStore } from '../../../store/useGameStore';
 
 const SharkLoanPanel: React.FC = () => {
   const borrowFromShark = useGameStore((state) => state.borrowFromShark);
+  const repayShark = useGameStore((state) => state.repayShark);
   const sharkDebt = useGameStore((state) => state.sharkDebt);
+  const cash = useGameStore((state) => state.cash);
   const gameStatus = useGameStore((state) => state.gameStatus);
+  const getNetWorth = useGameStore((state) => state.getNetWorth);
 
   const PRESET_AMOUNTS = [1000000, 2500000, 5000000, 10000000]; // $10k, $25k, $50k, $100k in cents
-  const PRESET_LABELS = ['$10k', '$25k', '$50k', '$100k'];
+  const PRESET_LABELS = ['$10,000', '$25,000', '$50,000', '$100,000'];
 
+  const netWorth = getNetWorth();
   const isDisabled = gameStatus === 'ended';
+  const canRepay = sharkDebt > 0 && cash >= sharkDebt;
 
   return (
     <div className="shark-loan-panel">
@@ -19,6 +24,16 @@ const SharkLoanPanel: React.FC = () => {
           OUTSTANDING: ${(sharkDebt / 100).toLocaleString()}
         </div>
       )}
+      {sharkDebt > 0 && (
+        <button
+          className="shark-repay-btn pixel-bold"
+          onClick={repayShark}
+          disabled={isDisabled || !canRepay}
+          title={!canRepay ? `Need $${(sharkDebt / 100).toLocaleString()} to repay` : undefined}
+        >
+          {canRepay ? `PAY OFF DEBT — $${(sharkDebt / 100).toLocaleString()}` : `CAN'T AFFORD — $${(sharkDebt / 100).toLocaleString()} OWED`}
+        </button>
+      )}
       <div className="shark-borrow-label pixel-bold">BORROW:</div>
       <div className="shark-borrow-buttons">
         {PRESET_AMOUNTS.map((amount, i) => (
@@ -26,7 +41,7 @@ const SharkLoanPanel: React.FC = () => {
             key={amount}
             className="shark-borrow-btn pixel-bold"
             onClick={() => borrowFromShark(amount)}
-            disabled={isDisabled}
+            disabled={isDisabled || sharkDebt + amount > netWorth}
           >
             {PRESET_LABELS[i]}
           </button>

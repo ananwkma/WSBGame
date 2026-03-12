@@ -241,6 +241,26 @@ const ENDING_CONTENT: Record<EndingType, EndingContent> = {
     ],
   },
 
+  EXPIRED_WORTHLESS: {
+    title: 'EXPIRED WORTHLESS',
+    description: "You bought options. You watched them decay. You forgot to sell. Day 11 arrived and took everything. The contracts expired worthless. So did your financial ambitions. The market doesn't care that you were 'holding for the squeeze.'",
+    color: '#cc7733',
+    pixelArt: [
+      '................',
+      '....SSSSSSSS....',
+      '...SS......SS...',
+      '...S.RRRRRR.S...',
+      '...S.R....R.S...',
+      '...S.RRRRRR.S...',
+      '...S........S...',
+      '...SS......SS...',
+      '....SSSSSSSS....',
+      '.......SS.......',
+      '......SSSS......',
+      '.....SSSSSS.....',
+    ],
+  },
+
   PAPER_HANDS: {
     title: 'PAPER HANDS',
     description: "You sold. You actually sold. That position you dumped for a 3% gain? It would have been worth over a million dollars today. The apes know. The forum will never forget. You will wake up at 3am about this for years.",

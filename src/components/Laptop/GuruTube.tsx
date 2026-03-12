@@ -71,7 +71,7 @@ export const GuruTube: React.FC = () => {
       setChatMessages(prev => [...prev.slice(-20), newMessage]);
     };
 
-    const interval = setInterval(addMessage, 1500 + Math.random() * 2000);
+    const interval = setInterval(addMessage, 750 + Math.random() * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -147,7 +147,7 @@ export const GuruTube: React.FC = () => {
                        ${(stock.currentPrice / 100).toFixed(2)}
                      </span>
                    </div>
-                   <MiniChart data={stock.history.slice(-10).map(p => p.price)} width={40} height={15} />
+                   <MiniChart data={stock.history.slice(-10).map(p => p.price)} width={55} height={20} />
                  </div>
                );
             })}

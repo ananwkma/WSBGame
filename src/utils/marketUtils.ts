@@ -1,6 +1,20 @@
 import type { HistoryPoint } from '../store/types';
 
 /**
+ * Scales implied volatility by days-to-expiry.
+ * Shorter DTE = higher effective IV (mimics real gamma/vol dynamics near expiry).
+ *
+ * At DTE=10 (max): 1.0× base IV
+ * At DTE=5:        1.5× base IV
+ * At DTE=1:        1.9× base IV
+ * At DTE=0:        2.0× base IV
+ */
+export const scaledIV = (baseIV: number, daysToExpiry: number): number => {
+  const dte = Math.max(0, Math.min(10, daysToExpiry));
+  return baseIV * (1 + (10 - dte) / 10);
+};
+
+/**
  * Generates plausible historical price data using a random walk algorithm.
  * 
  * @param initialPrice The starting price for the historical generation

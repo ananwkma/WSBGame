@@ -75,6 +75,7 @@ export type EndingType =
   | 'WOLF_OF_WALL_STREET'
   | 'PRIVATE_ISLAND'
   | 'DEBT_SPIRAL'
+  | 'EXPIRED_WORTHLESS'
   | 'PAPER_HANDS';
 
 export interface PopupItem {
@@ -160,6 +161,7 @@ export interface GameActions {
   getOpportunityCost: () => number;
   setThreadRead: (sender: string) => void;
   borrowFromShark: (amount: number) => void;
+  repayShark: () => void;
 }
 
 export type GameStore = GameState & GameActions;

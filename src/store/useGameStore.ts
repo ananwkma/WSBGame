@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GameStore, StockTicker, GameEvent, EndingType, StockData } from './types';
-import { generateHistoricalData, calculateBS } from '../utils/marketUtils';
+import { generateHistoricalData, calculateBS, scaledIV } from '../utils/marketUtils';
 import { getRandomTemplate, getRandomPrediction, pickSharkMessage } from '../data/messageTemplates';
 import type { PerformanceTier } from '../data/messageTemplates';
 
@@ -157,7 +157,8 @@ export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, 
   const roundTo = 500; // $5.00 increments
   // All options now expire at the end of the game (Day 11)
   const daysToExpiry = Math.max(1, 11 - currentDay);
-  const t = daysToExpiry / 252; 
+  const t = daysToExpiry / 252;
+  const effectiveIV = scaledIV(iv, daysToExpiry);
   
   // 1. Generate standard OTM strikes
   const otmStrikes: number[] = [];
@@ -183,7 +184,7 @@ export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, 
   const allStrikes = Array.from(new Set([...otmStrikes, ...heldStrikes])).sort((a, b) => a - b);
 
   return allStrikes.flatMap((strike) => {
-    const callBS = calculateBS('CALL', currentPrice, strike, t, iv);
+    const callBS = calculateBS('CALL', currentPrice, strike, t, effectiveIV);
     const callPrice = callBS.price;
     const callGreeks = {
       delta: callBS.delta,
@@ -192,7 +193,7 @@ export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, 
       vega: callBS.vega,
     };
 
-    const putBS = calculateBS('PUT', currentPrice, strike, t, iv);
+    const putBS = calculateBS('PUT', currentPrice, strike, t, effectiveIV);
     const putPrice = putBS.price;
     const putGreeks = {
       delta: putBS.delta,
@@ -364,7 +365,7 @@ export const useGameStore = create<GameStore>()(
         // Use premium from UI if available, otherwise calculate it
         const premiumPerUnit = greeks.premium !== undefined 
           ? greeks.premium 
-          : calculateOptionPrice(stock.currentPrice, strikePrice, type, stock.iv, tInitial);
+          : calculateOptionPrice(stock.currentPrice, strikePrice, type, scaledIV(stock.iv, daysToExpiry), tInitial);
           
         const totalCost = premiumPerUnit * amount;
 
@@ -396,12 +397,33 @@ export const useGameStore = create<GameStore>()(
 
           const newHype = Math.min(100, hype + 8); // Options are more hype
 
-          set((state) => ({
-            cash: state.cash - totalCost,
-            optionsHoldings: [...state.optionsHoldings, newOption],
-            tradeHistory: [tradeEntry, ...state.tradeHistory],
-            hype: newHype,
-          }));
+          set((state) => {
+            const existingIdx = state.optionsHoldings.findIndex(
+              o => o.ticker === ticker && o.type === type && o.strikePrice === strikePrice
+            );
+            let updatedOptions;
+            if (existingIdx >= 0) {
+              const existing = state.optionsHoldings[existingIdx];
+              const merged = {
+                ...existing,
+                amount: existing.amount + amount,
+                premiumPaid: existing.premiumPaid + totalCost,
+                delta: greeks.delta,
+                gamma: greeks.gamma,
+                theta: greeks.theta,
+                vega: greeks.vega,
+              };
+              updatedOptions = state.optionsHoldings.map((o, i) => i === existingIdx ? merged : o);
+            } else {
+              updatedOptions = [...state.optionsHoldings, newOption];
+            }
+            return {
+              cash: state.cash - totalCost,
+              optionsHoldings: updatedOptions,
+              tradeHistory: [tradeEntry, ...state.tradeHistory],
+              hype: newHype,
+            };
+          });
 
           triggerFlash('positive');
           addPopup(`${type} OPTION BOUGHT!`, 'positive');
@@ -417,8 +439,9 @@ export const useGameStore = create<GameStore>()(
         
         if (option && option.amount >= amount) {
           const stock = stocks[option.ticker];
-          const tRemaining = Math.max(0.0001, (option.expiryDay - day) / 252);
-          const marketValuePerUnit = calculateOptionPrice(stock.currentPrice, option.strikePrice, option.type, stock.iv, tRemaining);
+          const dteRemaining = Math.max(0, option.expiryDay - day);
+          const tRemaining = Math.max(0.0001, dteRemaining / 252);
+          const marketValuePerUnit = calculateOptionPrice(stock.currentPrice, option.strikePrice, option.type, scaledIV(stock.iv, dteRemaining), tRemaining);
           const revenue = marketValuePerUnit * amount;
           
           const costBasisPerUnit = option.premiumPaid / option.amount;
@@ -437,7 +460,9 @@ export const useGameStore = create<GameStore>()(
 
           const updatedOptions = optionsHoldings.map(o => {
             if (o.id === optionId) {
-              return { ...o, amount: o.amount - amount };
+              const remainingAmount = o.amount - amount;
+              const remainingPremiumPaid = o.premiumPaid * remainingAmount / o.amount;
+              return { ...o, amount: remainingAmount, premiumPaid: remainingPremiumPaid };
             }
             return o;
           }).filter(o => o.amount > 0);
@@ -464,8 +489,9 @@ export const useGameStore = create<GameStore>()(
 
         const optionsValue = optionsHoldings.reduce((total, option) => {
           const stock = stocks[option.ticker];
-          const tRemaining = Math.max(0.0001, (option.expiryDay - day) / 252);
-          const marketValue = calculateOptionPrice(stock.currentPrice, option.strikePrice, option.type, stock.iv, tRemaining);
+          const dteRemaining = Math.max(0, option.expiryDay - day);
+          const tRemaining = Math.max(0.0001, dteRemaining / 252);
+          const marketValue = calculateOptionPrice(stock.currentPrice, option.strikePrice, option.type, scaledIV(stock.iv, dteRemaining), tRemaining);
           return total + (marketValue * option.amount);
         }, 0);
 
@@ -525,8 +551,51 @@ export const useGameStore = create<GameStore>()(
         }
       },
 
+      repayShark: () => {
+        const { cash, sharkDebt, threads, day } = get();
+        if (sharkDebt <= 0) return;
+        if (cash < sharkDebt) {
+          // Can't afford full repayment — partial isn't offered, just block
+          const rejectMsg = {
+            id: `shark-reject-${day}`,
+            sender: 'Loan Shark',
+            text: `You're short. Come back when you got all of it. $${(sharkDebt / 100).toLocaleString()} — not a penny less.`,
+            day,
+          };
+          set({
+            threads: {
+              ...threads,
+              'Loan Shark': {
+                ...threads['Loan Shark'],
+                messages: [rejectMsg, ...threads['Loan Shark'].messages],
+              },
+            },
+          });
+          return;
+        }
+        const paidMsg = {
+          id: `shark-repay-${day}`,
+          sender: 'Loan Shark',
+          text: `Smart move. Debt cleared. Don't come crawling back.`,
+          day,
+        };
+        set({
+          cash: cash - sharkDebt,
+          sharkDebt: 0,
+          threads: {
+            ...threads,
+            'Loan Shark': {
+              ...threads['Loan Shark'],
+              messages: [paidMsg, ...threads['Loan Shark'].messages],
+            },
+          },
+        });
+      },
+
       borrowFromShark: (amount) => {
         const { cash, sharkDebt, threads, day } = get();
+        const netWorth = get().getNetWorth();
+        if (sharkDebt + amount > netWorth) return;
         const confirmMsg = {
           id: `shark-borrow-${day}`,
           sender: 'Loan Shark',
@@ -588,14 +657,8 @@ export const useGameStore = create<GameStore>()(
         const newDebt = currentDebt > 0 ? Math.round(currentDebt * (1 + SHARK_INTEREST_RATE)) : 0;
 
         if (day >= 10) {
-          // Settle all options at intrinsic value (not BS market price) before evaluating the ending
-          const optionPayouts = optionsHoldings.reduce((total, option) => {
-            const finalPrice = stocks[option.ticker].currentPrice;
-            const payoff = option.type === 'CALL'
-              ? Math.max(0, Math.floor(finalPrice - option.strikePrice)) * option.amount
-              : Math.max(0, Math.floor(option.strikePrice - finalPrice)) * option.amount;
-            return total + payoff;
-          }, 0);
+          // All options expire worthless on Day 11 regardless of ITM/OTM status — sell before end or lose it all
+          const optionPayouts = 0;
 
           const stockValue = (Object.keys(holdings) as StockTicker[]).reduce((total, ticker) => {
             return total + (stocks[ticker].currentPrice * holdings[ticker]);
@@ -627,13 +690,20 @@ export const useGameStore = create<GameStore>()(
           const BEHAVIOR_WEALTH_CEILING = 10000000; // $100,000 in cents
           const PAPER_HANDS_OPP_THRESHOLD = 100000000; // $1,000,000 in cents
 
+          // Premium paid for options still held at game end (all expire worthless)
+          const premiumLostToOptions = optionsHoldings.reduce((sum, o) => sum + o.premiumPaid, 0);
+          // "Lost over half your money to expired options" = premium lost > remaining net worth
+          const lostHalfToExpiredOptions = optionsHoldings.length > 0 && premiumLostToOptions > settledNetWorth;
+
           let ending: EndingType;
 
-          if (settledNetWorth <= BEHAVIOR_WEALTH_CEILING) {
-            // Check behavior endings first (DEBT_SPIRAL beats PAPER_HANDS)
-            if (newDebt > settledNetWorth) {
-              ending = 'DEBT_SPIRAL';
-            } else if (settledNetWorth < BEHAVIOR_WEALTH_CEILING && computedPeakOpportunityCost >= PAPER_HANDS_OPP_THRESHOLD) {
+          // Priority order: DEBT_SPIRAL > EXPIRED_WORTHLESS > wealth endings > PAPER_HANDS
+          if (newDebt > settledNetWorth) {
+            ending = 'DEBT_SPIRAL';
+          } else if (lostHalfToExpiredOptions) {
+            ending = 'EXPIRED_WORTHLESS';
+          } else if (settledNetWorth <= BEHAVIOR_WEALTH_CEILING) {
+            if (settledNetWorth < BEHAVIOR_WEALTH_CEILING && computedPeakOpportunityCost >= PAPER_HANDS_OPP_THRESHOLD) {
               ending = 'PAPER_HANDS';
             } else if (settledNetWorth <= 8000000) {
               // ≤ $80,000
@@ -776,8 +846,9 @@ export const useGameStore = create<GameStore>()(
         
         const optionsValue = remainingOptions.reduce((total, option) => {
           const stock = nextStocks[option.ticker];
-          const tRemaining = Math.max(0.0001, (option.expiryDay - nextDayNum) / 252);
-          const marketValue = calculateOptionPrice(stock.currentPrice, option.strikePrice, option.type, stock.iv, tRemaining);
+          const dteRemaining = Math.max(0, option.expiryDay - nextDayNum);
+          const tRemaining = Math.max(0.0001, dteRemaining / 252);
+          const marketValue = calculateOptionPrice(stock.currentPrice, option.strikePrice, option.type, scaledIV(stock.iv, dteRemaining), tRemaining);
           return total + (marketValue * option.amount);
         }, 0);
 

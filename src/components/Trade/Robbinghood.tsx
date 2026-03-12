@@ -6,7 +6,7 @@ import { PriceChart } from './PriceChart';
 import { SwipeConfirm } from './SwipeConfirm';
 import { OptionsChain } from './OptionsChain';
 import { PerformanceIndicator } from '../Feedback/PerformanceIndicator';
-import { formatCurrency, calculatePercentChange } from '../../utils/marketUtils';
+import { formatCurrency, calculatePercentChange, scaledIV } from '../../utils/marketUtils';
 import './Robbinghood.css';
 
 type Tab = 'Portfolio' | 'Trade' | 'History';
@@ -26,6 +26,7 @@ export const Robbinghood: React.FC = () => {
   const [tradeAmount, setTradeAmount] = useState<number>(1);
   const [tradeMode, setTradeMode] = useState<'STOCK' | 'OPTION'>('STOCK');
   const [selectedOptionData, setSelectedOptionData] = useState<any>(null);
+  const [holdingsView, setHoldingsView] = useState<'daily' | 'total'>('daily');
   
   const {
     cash, holdings, stocks,
@@ -172,46 +173,76 @@ export const Robbinghood: React.FC = () => {
                />
             </div>
             
-            <div className="robbinghood-label" style={{ marginTop: '12px', display: 'block' }}>Holdings</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+              <div className="robbinghood-label">Holdings</div>
+              <div style={{ display: 'flex', gap: '2px' }}>
+                {(['daily', 'total'] as const).map(v => (
+                  <button key={v} onClick={() => setHoldingsView(v)}
+                    style={{ fontSize: '10px', padding: '2px 7px', cursor: 'pointer', fontFamily: 'inherit', border: '1px solid #706b66',
+                      background: holdingsView === v ? '#e0dbcb' : 'none',
+                      color: holdingsView === v ? '#2b2b26' : '#706b66',
+                      fontWeight: holdingsView === v ? 'bold' : 'normal' }}>
+                    {v === 'daily' ? '1D' : 'ALL'}
+                  </button>
+                ))}
+              </div>
+            </div>
             <ul className="robbinghood-list">
               {Object.entries(holdings).map(([ticker, amount]) => {
                 if (amount === 0) return null;
-                const price = stocks[ticker as StockTicker].currentPrice;
+                const stock = stocks[ticker as StockTicker];
+                const price = stock.currentPrice;
                 const basis = costBasis[ticker as StockTicker];
-                const profit = (price - basis) * amount;
-                const profitPercent = calculatePercentChange(price, basis);
-                
+                const changeVal = (price - basis) * amount;
+                const changePct = calculatePercentChange(price, basis);
+                const color = changeVal === 0 ? '#e0dbcb' : changeVal > 0 ? '#94ba8b' : '#ba8b8b';
+
                 return (
-                  <li key={ticker} className="robbinghood-list-item" onClick={() => { setActiveTab('Trade'); setSelectedStock(ticker as StockTicker); }} style={{ cursor: 'pointer' }}>
+                  <li key={ticker} className="robbinghood-list-item" onClick={() => { setActiveTab('Trade'); setSelectedStock(ticker as StockTicker); }}
+                    style={{ cursor: 'pointer', borderLeft: `3px solid ${color}` }}>
                     <div style={{ flex: 1 }}>
-                      <span className="ticker">{ticker}</span>
-                      <div className="price" style={{ fontSize: '10px', color: '#a89f8c' }}>{amount} shares @ {formatCurrency(basis)}</div>
+                      <span className="ticker" style={{ color }}>{ticker}</span>
+                      <div className="price" style={{ fontSize: '10px', color }}>{amount} shares @ {formatCurrency(basis)}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div className="price">{formatCurrency(price * amount)}</div>
-                      <PerformanceIndicator value={profit} percent={profitPercent} showAmount={false} />
+                      <PerformanceIndicator value={changeVal} percent={changePct} />
                     </div>
                   </li>
                 );
               })}
               {optionsHoldings.map((opt) => {
                 const stock = stocks[opt.ticker];
-                const tRemaining = Math.max(0.0001, (opt.expiryDay - day) / 252);
-                const currentPremium = calculateOptionPrice(stock.currentPrice, opt.strikePrice, opt.type, stock.iv, tRemaining);
+                const dteRemaining = Math.max(0, opt.expiryDay - day);
+                const tRemaining = Math.max(0.0001, dteRemaining / 252);
+                const currentPremium = calculateOptionPrice(stock.currentPrice, opt.strikePrice, opt.type, scaledIV(stock.iv, dteRemaining), tRemaining);
+                const currentValue = opt.amount * currentPremium;
+                const prevStockPrice = stock.history.length > 1 ? stock.history[stock.history.length - 2].price : stock.currentPrice;
+                const dtePrev = dteRemaining + 1;
+                const prevPremium = calculateOptionPrice(prevStockPrice, opt.strikePrice, opt.type, scaledIV(stock.iv, dtePrev), Math.max(0.0001, dtePrev / 252));
+                const boughtAmountToday = tradeHistory.filter(t => t.day === day && t.ticker === opt.ticker && t.type === 'OPTION_BUY').reduce((s, t) => s + t.amount, 0);
+                const relevantAmount = Math.max(0, opt.amount - boughtAmountToday);
+                const dailyPL = relevantAmount === 0 ? 0 : (currentPremium - prevPremium) * relevantAmount;
+                const dailyPct = relevantAmount === 0 ? 0 : calculatePercentChange(currentPremium, prevPremium);
+                // Total change
+                const totalPL = currentValue - opt.premiumPaid;
+                const totalPct = calculatePercentChange(currentValue, opt.premiumPaid);
+                const optChangeVal = holdingsView === 'daily' ? dailyPL : totalPL;
+                const optChangePct = holdingsView === 'daily' ? dailyPct : totalPct;
+                const color = optChangeVal === 0 ? '#e0dbcb' : optChangeVal > 0 ? '#94ba8b' : '#ba8b8b';
 
                 return (
-                  <li key={opt.id} className="robbinghood-list-item">
+                  <li key={opt.id} className="robbinghood-list-item" style={{ cursor: 'pointer', borderLeft: `3px solid ${color}` }}
+                    onClick={() => { setActiveTab('Trade'); setSelectedStock(opt.ticker); }}>
                     <div style={{ flex: 1 }}>
-                      <span className="ticker" style={{ color: opt.type === 'CALL' ? '#94ba8b' : '#ba8b8b' }}>
+                      <span className="ticker" style={{ color }}>
                         {opt.ticker} {opt.type} {formatCurrency(opt.strikePrice)}
                       </span>
-                      <div className="price" style={{ fontSize: '10px', color: '#a89f8c' }}>{opt.amount} ctrs (Exp Day {opt.expiryDay})</div>
+                      <div className="price" style={{ fontSize: '10px', color }}>{opt.amount} ctrs @ {formatCurrency(opt.premiumPaid / opt.amount)} avg</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div className="price">
-                        {formatCurrency(opt.amount * currentPremium)}
-                      </div>
-                      <div style={{ fontSize: '10px', color: '#706b66' }}>IV: {(stock.iv * 100).toFixed(0)}%</div>
+                      <div className="price">{formatCurrency(currentValue)}</div>
+                      <PerformanceIndicator value={optChangeVal} percent={optChangePct} />
                     </div>
                   </li>
                 );
@@ -241,7 +272,7 @@ export const Robbinghood: React.FC = () => {
                          <span className="ticker">{stock.ticker}</span>
                          <div style={{ textAlign: 'right' }}>
                            <span className="price">{formatCurrency(stock.currentPrice)}</span>
-                           <PerformanceIndicator percent={changePercent} showAmount={false} />
+                           <PerformanceIndicator value={stock.currentPrice - prevPrice} percent={changePercent} />
                          </div>
                        </li>
                      );
@@ -254,7 +285,7 @@ export const Robbinghood: React.FC = () => {
                    if (!selectedStock) return null;
                    const hist = stocks[selectedStock].history;
                    const prevPrice = hist.length > 1 ? hist[hist.length - 2].price : stocks[selectedStock].currentPrice;
-                   const chartColor = stocks[selectedStock].currentPrice >= hist[0].price ? '#94ba8b' : '#ba8b8b';
+                   const chartColor = stocks[selectedStock].currentPrice >= prevPrice ? '#94ba8b' : '#ba8b8b';
                    const changePct = calculatePercentChange(stocks[selectedStock].currentPrice, prevPrice);
                    return (
                      <>
@@ -271,7 +302,7 @@ export const Robbinghood: React.FC = () => {
                            <span style={{ fontSize: '15px', fontWeight: 'bold' }}>
                              {STOCK_NAMES[selectedStock] ?? selectedStock} &mdash; {formatCurrency(currentPrice)}
                            </span>
-                           <PerformanceIndicator percent={changePct} showAmount={false} />
+                           <PerformanceIndicator value={currentPrice - prevPrice} percent={changePct} />
                            <span style={{ fontSize: '11px', color: '#a89f8c', marginLeft: 'auto' }}>
                              IV: {(stocks[selectedStock].iv * 100).toFixed(0)}%
                            </span>
@@ -281,22 +312,85 @@ export const Robbinghood: React.FC = () => {
                    );
                  })()}
                  
-                 <div style={{ marginBottom: '12px', padding: '8px', backgroundColor: '#3d3d38', border: '1px solid #706b66' }}>
-                   <div style={{ fontSize: '10px', color: '#706b66', marginBottom: '4px' }}>YOUR POSITIONS</div>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                     <span>SHARES: {holdings[selectedStock] || 0}</span>
-                     <span>OPTIONS: {
-                       optionsHoldings.filter(o => o.ticker === selectedStock).reduce((sum, o) => sum + o.amount, 0)
-                     } CTRS</span>
-                   </div>
-                   {optionsHoldings.filter(o => o.ticker === selectedStock).length > 0 && (
-                     <div style={{ marginTop: '4px', fontSize: '10px', color: '#a89f8c' }}>
-                       {optionsHoldings.filter(o => o.ticker === selectedStock).map(o => (
-                         <div key={o.id}>{o.type} ${ (o.strikePrice/100).toFixed(2) } ({o.amount}x) - Exp Day {o.expiryDay}</div>
-                       ))}
+                 {(() => {
+                   const sharesHeld = holdings[selectedStock] || 0;
+                   const stockOptions = optionsHoldings.filter(o => o.ticker === selectedStock);
+                   if (sharesHeld === 0 && stockOptions.length === 0) return null;
+                   const avgCost = costBasis[selectedStock] || 0;
+                   const stockValue = sharesHeld * currentPrice;
+                   const stockPL = (currentPrice - avgCost) * sharesHeld;
+                   const stockPLPct = calculatePercentChange(currentPrice, avgCost);
+                   // Daily color for shares
+                   const hist = stocks[selectedStock].history;
+                   const stockColor = stockPL === 0 ? '#e0dbcb' : stockPL > 0 ? '#94ba8b' : '#ba8b8b';
+                   return (
+                     <div style={{ marginBottom: '12px', padding: '8px', backgroundColor: '#2b2b26', border: '1px solid #706b66' }}>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                         <div style={{ fontSize: '10px', color: '#706b66', letterSpacing: '1px' }}>YOUR POSITIONS</div>
+                         <div style={{ display: 'flex', gap: '2px' }}>
+                           {(['daily', 'total'] as const).map(v => (
+                             <button key={v} onClick={() => setHoldingsView(v)}
+                               style={{ fontSize: '9px', padding: '1px 6px', cursor: 'pointer', fontFamily: 'inherit', border: '1px solid #706b66',
+                                 background: holdingsView === v ? '#e0dbcb' : 'none',
+                                 color: holdingsView === v ? '#2b2b26' : '#706b66',
+                                 fontWeight: holdingsView === v ? 'bold' : 'normal' }}>
+                               {v === 'daily' ? '1D' : 'ALL'}
+                             </button>
+                           ))}
+                         </div>
+                       </div>
+                       {sharesHeld > 0 && (() => {
+                         const posChangeVal = stockPL;
+                         const posChangePct = stockPLPct;
+                         const posColor = posChangeVal === 0 ? '#e0dbcb' : posChangeVal > 0 ? '#94ba8b' : '#ba8b8b';
+                         return (
+                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: stockOptions.length > 0 ? '8px' : 0 }}>
+                             <div>
+                               <div style={{ fontSize: '12px', fontWeight: 'bold', color: posColor }}>{sharesHeld} SHARES</div>
+                               <div style={{ fontSize: '10px', color: '#a89f8c' }}>avg {formatCurrency(avgCost)}/share</div>
+                             </div>
+                             <div style={{ textAlign: 'right' }}>
+                               <div style={{ fontSize: '12px' }}>{formatCurrency(stockValue)}</div>
+                               <PerformanceIndicator value={posChangeVal} percent={posChangePct} />
+                             </div>
+                           </div>
+                         );
+                       })()}
+                       {stockOptions.map(o => {
+                         const dte = Math.max(0, o.expiryDay - day);
+                         const tRem = Math.max(0.0001, dte / 252);
+                         const curPremium = calculateOptionPrice(stocks[selectedStock].currentPrice, o.strikePrice, o.type, scaledIV(stocks[selectedStock].iv, dte), tRem);
+                         const curVal = o.amount * curPremium;
+                         const totalPL = curVal - o.premiumPaid;
+                         const totalPLPct = calculatePercentChange(curVal, o.premiumPaid);
+                         const prevStockPrice = hist.length > 1 ? hist[hist.length - 2].price : stocks[selectedStock].currentPrice;
+                         const dtePrev = dte + 1;
+                         const prevPremium = calculateOptionPrice(prevStockPrice, o.strikePrice, o.type, scaledIV(stocks[selectedStock].iv, dtePrev), Math.max(0.0001, dtePrev / 252));
+                         const boughtOptToday = tradeHistory.filter(t => t.day === day && t.ticker === o.ticker && t.type === 'OPTION_BUY').reduce((s, t) => s + t.amount, 0);
+                         const optAtStart = Math.max(0, o.amount - boughtOptToday);
+                         const optDailyPL = optAtStart <= 0 ? 0 : (curPremium - prevPremium) * optAtStart;
+                         const optDailyPct = optAtStart <= 0 ? 0 : calculatePercentChange(curPremium, prevPremium);
+                         const optChangeVal = holdingsView === 'daily' ? optDailyPL : totalPL;
+                         const optChangePct = holdingsView === 'daily' ? optDailyPct : totalPLPct;
+                         const optColor = optChangeVal === 0 ? '#e0dbcb' : optChangeVal > 0 ? '#94ba8b' : '#ba8b8b';
+                         return (
+                           <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #706b66' }}>
+                             <div>
+                               <div style={{ fontSize: '12px', fontWeight: 'bold', color: optColor }}>
+                                 {o.amount}x {o.type} {formatCurrency(o.strikePrice)}
+                               </div>
+                               <div style={{ fontSize: '10px', color: '#a89f8c' }}>avg {formatCurrency(o.premiumPaid / o.amount)}/ctr · exp day {o.expiryDay}</div>
+                             </div>
+                             <div style={{ textAlign: 'right' }}>
+                               <div style={{ fontSize: '12px' }}>{formatCurrency(curVal)}</div>
+                               <PerformanceIndicator value={optChangeVal} percent={optChangePct} />
+                             </div>
+                           </div>
+                         );
+                       })}
                      </div>
-                   )}
-                 </div>
+                   );
+                 })()}
 
                  <div className="chart-container" style={{ width: '100%', height: '360px', backgroundColor: '#2b2b26', marginBottom: '16px', border: '2px solid #706b66' }}>
                     <PriceChart
