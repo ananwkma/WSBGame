@@ -3,11 +3,15 @@
 ## Phase 15: Live Market Events Polish
 - [x] **Plan 01 — (Wave 1 parallel)**: Real-time engine (plan 01 in wave)
 - [x] **Plan 02 — UI Branding & Cleanup**: Phone renamed uPhone/uMessage/readit; HYPE LEVEL bar removed; DualViewShell hype jitter eliminated; laptop readit tab added with u/DegenTrader WSB onboarding post and 6 troll tutorial replies.
+- [x] **Plan 03 — IntraChart Component**: Multi-timeframe SVG chart with OHLC candles, crosshair, groupBars utility, IntraChart wired in Robbinghood for stock and portfolio views, earnings countdown.
 
 ## Key Decisions (Phase 15)
 - Removed useGameStore entirely from DualViewShell — static animate {x:0,y:0}
 - ReaditTab uses existing pixel.css classes — no new CSS file
 - LaptopBrowser address bar URL updated per-tab
+- IntraChart dailyHistory expects HistoryPoint (turn+price); liveNetWorthHistory mapped at call site from NetWorthPoint (turn+value)
+- EARNINGS_DAYS static lookup in Robbinghood.tsx spread across days 3-8 for all 6 tickers
+- MARKET CLOSED overlay shown only when !marketIsOpen AND intradayBars.length === 0
 
 ## Completed Phases
 - [x] **Phase 1: Core Shell & Visual Filter**
@@ -51,8 +55,8 @@
 - formatCurrency uses Math.abs internally; negative net worth sign handled at call site in Robbinghood.tsx to avoid breaking PerformanceIndicator.
 
 ## Current Focus
-- Phase 15 in progress. Plan 15-01 complete (2026-03-14).
-- Last session: Completed 15-01-PLAN.md (2026-03-14)
+- Phase 15 in progress. Plan 15-03 complete (2026-03-14).
+- Last session: Completed 15-03-PLAN.md (2026-03-14)
 
 ## Key Decisions
 - useMarketClock uses getState().tickMarket() (non-stale closure) for setInterval
