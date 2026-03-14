@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore, calculateOptionPrice } from '../../store/useGameStore';
 import type { StockTicker } from '../../store/types';
-import { PriceChart } from './PriceChart';
+import { IntraChart } from './IntraChart';
 import { SwipeConfirm } from './SwipeConfirm';
 import { OptionsChain } from './OptionsChain';
 import { PerformanceIndicator } from '../Feedback/PerformanceIndicator';
@@ -20,6 +20,15 @@ const STOCK_NAMES: Record<string, string> = {
   '$BERG':  'BERGSHIRE HATHAME',
 };
 
+const EARNINGS_DAYS: Partial<Record<string, number>> = {
+  '$GAME':  3,
+  '$POPC':  5,
+  '$APE':   4,
+  '$GOOGO': 7,
+  '$APPO':  6,
+  '$BERG':  8,
+};
+
 export const Robbinghood: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('Portfolio');
   const [selectedStock, setSelectedStock] = useState<StockTicker | null>(null);
@@ -32,7 +41,8 @@ export const Robbinghood: React.FC = () => {
     cash, holdings, stocks,
     buyStock, sellStock, sellOption, buyOption,
     getNetWorth, netWorthHistory, optionsHoldings,
-    costBasis, tradeHistory, day, sharkDebt
+    costBasis, tradeHistory, day, currentDay, sharkDebt,
+    intradayBars, marketTime, marketIsOpen, netWorthBars,
   } = useGameStore();
 
   // Reset trade amount when selection changes
@@ -165,12 +175,16 @@ export const Robbinghood: React.FC = () => {
               </div>
             )}
 
-            <div className="chart-container" style={{ width: '100%', height: '300px', backgroundColor: '#2b2b26', margin: '12px 0', border: '2px solid #706b66' }}>
-               <PriceChart
-                 history={liveNetWorthHistory}
-                 width={300}
-                 height={300}
-               />
+            <div className="chart-container" style={{ width: '100%', backgroundColor: '#2b2b26', margin: '12px 0', border: '2px solid #706b66', padding: '8px' }}>
+              <IntraChart
+                intradayBars={[]}
+                dailyHistory={liveNetWorthHistory.map((p) => ({ turn: p.turn, price: p.value }))}
+                netWorthBars={netWorthBars}
+                marketTime={marketTime}
+                marketIsOpen={marketIsOpen}
+                ticker="NET WORTH"
+                showCandleToggle={false}
+              />
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
@@ -307,6 +321,15 @@ export const Robbinghood: React.FC = () => {
                              IV: {(stocks[selectedStock].iv * 100).toFixed(0)}%
                            </span>
                          </div>
+                         {EARNINGS_DAYS[selectedStock] && (
+                           <div className="earnings-countdown" style={{ fontSize: '10px', opacity: 0.6, marginTop: '2px' }}>
+                             {EARNINGS_DAYS[selectedStock]! > currentDay
+                               ? `${EARNINGS_DAYS[selectedStock]! - currentDay} days until earnings`
+                               : EARNINGS_DAYS[selectedStock] === currentDay
+                                 ? 'Earnings today'
+                                 : 'Earnings passed'}
+                           </div>
+                         )}
                        </div>
                      </>
                    );
@@ -392,12 +415,15 @@ export const Robbinghood: React.FC = () => {
                    );
                  })()}
 
-                 <div className="chart-container" style={{ width: '100%', height: '360px', backgroundColor: '#2b2b26', marginBottom: '16px', border: '2px solid #706b66' }}>
-                    <PriceChart
-                      history={stocks[selectedStock].history}
-                      width={300}
-                      height={360}
-                    />
+                 <div className="chart-container" style={{ width: '100%', backgroundColor: '#2b2b26', marginBottom: '16px', border: '2px solid #706b66', padding: '8px' }}>
+                   <IntraChart
+                     intradayBars={intradayBars[selectedStock] || []}
+                     dailyHistory={stocks[selectedStock].history}
+                     marketTime={marketTime}
+                     marketIsOpen={marketIsOpen}
+                     ticker={selectedStock}
+                     showCandleToggle={true}
+                   />
                  </div>
                  
                  <div className="trade-controls">
