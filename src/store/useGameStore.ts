@@ -998,7 +998,7 @@ export const useGameStore = create<GameStore>()(
 
         if (netWorth <= 0) {
           newKarma += 10000;
-          addPopup('LOSS PORN: LEGENDARY STATUS', 'positive', 50, 40);
+          addPopup('LOSS PORN: LEGENDARY STATUS', 'negative', 50, 40);
           dailyForumPosts.push({ id: `lp-${nextDayNum}`, user: 'YOU', title: 'I LOST EVERYTHING. AM I A LEGEND YET?', upvotes: 99999 });
         }
 

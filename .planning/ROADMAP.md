@@ -59,8 +59,8 @@
 **Plans**: 3 plans
 **Plan list**:
 - [x] 14-01-PLAN.md — Store layer: borrowFromShark action, Loan Shark thread seed, debt compounding, getNetWorth fix, DEBT_SPIRAL fix, SHARK templates
-- [ ] 14-02-PLAN.md — UI layer: SharkLoanPanel in MessageThread, SHARK DEBT row in Portfolio tab, EndingScreen stat
-- [ ] 14-03-PLAN.md — Verification: tsc clean build, human gameplay loop verification (7 checks)
+- [x] 14-02-PLAN.md — UI layer: SharkLoanPanel in MessageThread, SHARK DEBT row in Portfolio tab, EndingScreen stat
+- [x] 14-03-PLAN.md — Verification: tsc clean build, human gameplay loop verification (7 checks)
 
 ## Progress Table
 
@@ -79,5 +79,5 @@
 | 10: Social & Guru | 3/3 | Completed | 2026-03-06 |
 | 11: Granular Narrative | 3/3 | Completed | 2026-03-08 |
 | 12: Multiple Endings | 3/3 | Completed | 2026-03-09 |
-| 14: Shark Loans | 1/3 | In Progress | — |
+| 14: Shark Loans | 3/3 | Completed | 2026-03-14 |
 

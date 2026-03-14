@@ -151,7 +151,7 @@ export const Robbinghood: React.FC = () => {
           <div className="portfolio-view">
             <div className="robbinghood-stat">
               <div className="robbinghood-label">Net Worth</div>
-              <div className="robbinghood-value">{formatCurrency(netWorth)}</div>
+              <div className="robbinghood-value" style={netWorth < 0 ? { color: '#ba8b8b' } : undefined}>{netWorth < 0 ? `-${formatCurrency(netWorth)}` : formatCurrency(netWorth)}</div>
               <PerformanceIndicator value={dailyPerformance.value} percent={dailyPerformance.percent} />
             </div>
             <div className="robbinghood-stat">

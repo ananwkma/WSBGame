@@ -22,13 +22,12 @@
 - [x] **Phase 14: Shark Loans & Debt Mechanic**
   - [x] **Plan 01 — Debt Engine**: Full sharkDebt game-loop engine — borrowFromShark action, 20% per-turn compounding, debt-adjusted net worth, correct DEBT_SPIRAL detection, Loan Shark thread, and tiered threatening messages.
   - [x] **Plan 02 — Shark Loan UI**: SharkLoanPanel in Loan Shark SMS thread with 4 preset borrow buttons and outstanding debt display; SHARK DEBT row in Robbinghood Portfolio tab; SHARK DEBT stat on EndingScreen.
+  - [x] **Plan 03 — Verification**: All 7 gameplay checks passed. Fixed net worth display (negative sign + red color), fixed LOSS PORN: LEGENDARY STATUS popup color.
 
 ## Recent Changes
-- Added SharkLoanPanel inline component to MessageThread.tsx: renders below messages for Loan Shark thread with outstanding debt display and 4 preset borrow buttons ($10k/$25k/$50k/$100k), disabled when game ended.
-- Added SHARK DEBT conditional row to Robbinghood Portfolio tab using red color (#ba8b8b), hidden when sharkDebt === 0.
-- Added SHARK DEBT stat row to EndingScreen.tsx, hidden when sharkDebt === 0.
-- Added shark-loan-panel CSS styles to Phone.css.
-- TypeScript compiles clean (0 errors).
+- Fixed net worth display in Portfolio tab: negative net worth now shows `-$X` in red (#ba8b8b) when debt exceeds assets.
+- Fixed LOSS PORN: LEGENDARY STATUS popup — changed from green ('positive') to red ('negative').
+- Human-verified full shark loan loop: borrow, compound, wife bracket shift, DEBT_SPIRAL ending, post-game lock.
 
 ## Key Decisions
 - Conservative proxy (t.totalValue) used for OPTION_SELL opportunity cost since strike price is not stored in TradeEntry.
@@ -40,7 +39,8 @@
 - debtRatio uses post-debt currentNetWorth so ratio correctly exceeds 1.0 when debt outpaces assets.
 - Loan Shark thread seeded in getInitialState() so contact exists before borrowFromShark is ever called.
 - SharkLoanPanel defined as non-exported inline component; SHARK DEBT placed after Buying Power in Portfolio; EndingScreen uses inline stat-row div for span-level color control.
+- formatCurrency uses Math.abs internally; negative net worth sign handled at call site in Robbinghood.tsx to avoid breaking PerformanceIndicator.
 
 ## Current Focus
-- Phase 14 complete. Full shark loan mechanic: engine (14-01) + player-facing UI (14-02).
-- Last session: Completed 14-02-PLAN.md (2026-03-10)
+- Phase 14 fully complete (verified 2026-03-14). Roadmap exhausted — no further phases planned.
+- Last session: Completed 14-03 verification (2026-03-14)
