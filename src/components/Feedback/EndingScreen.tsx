@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
 import type { EndingType } from '../../store/types';
 
@@ -290,7 +291,12 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({ result }) => {
   const content = ENDING_CONTENT[result];
 
   return (
-    <div className="ending-screen-overlay">
+    <motion.div
+      className="ending-screen-overlay"
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+    >
       <div className="ending-card" style={{ border: `4px double ${content.color}` }}>
         <h1 className="ending-title" style={{ color: content.color }}>{content.title}</h1>
         <p className="ending-description">{content.description}</p>
@@ -309,7 +315,7 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({ result }) => {
           RESTART GAME
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

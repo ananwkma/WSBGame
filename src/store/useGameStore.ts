@@ -4,6 +4,7 @@ import type { GameStore, StockTicker, GameEvent, EndingType, StockData, CandleBa
 import { generateHistoricalData, calculateBS, scaledIV } from '../utils/marketUtils';
 import { getRandomTemplate, getRandomPrediction, pickSharkMessage } from '../data/messageTemplates';
 import type { PerformanceTier } from '../data/messageTemplates';
+import { playMarketOpen, playMarketClose, playBigGain, playBigLoss, playBorrow } from '../utils/soundEngine';
 
 const INITIAL_EVENTS: GameEvent[] = [
   {
@@ -245,6 +246,8 @@ const getInitialState = () => {
     karma: 0,
     marketTime: 360,         // 6:00am for Day 1
     marketIsOpen: false,     // market closed at start
+    bigGainTicker: null as string | null,
+    bigLossTicker: null as string | null,
     intradayBars: {},        // empty map — keyed by ticker symbol
     netWorthBars: [],
     scheduledEvents: [],
@@ -505,12 +508,25 @@ export const useGameStore = create<GameStore>()(
         const newTime = state.marketTime + 1;
         const newIsOpen = newTime >= 570 && newTime < 960; // 9:30am–4pm
 
+        // Market open/close bell
+        const wasOpen = state.marketIsOpen;
+        if (!wasOpen && newIsOpen) {
+          playMarketOpen();
+        }
+        if (wasOpen && !newIsOpen && newTime >= 960) {
+          playMarketClose();
+        }
+
         // Per-tick volatility scaling: divide daily vol by sqrt(390 ticks/day)
         const TICKS_PER_DAY = 390;
         const volScale = Math.sqrt(TICKS_PER_DAY);
 
         const newStocks = { ...state.stocks };
         const newIntradayBars: Record<string, CandleBar[]> = { ...state.intradayBars };
+
+        // Big gain/loss detection — cleared each tick
+        let bigGainSet: string | null = null;
+        let bigLossSet: string | null = null;
 
         if (newIsOpen) {
           // Move prices for each stock
@@ -523,6 +539,17 @@ export const useGameStore = create<GameStore>()(
             const change = 1 + (perTickVol * direction);
             let nextPrice = Math.round(stock.currentPrice * change);
             if (nextPrice < 1) nextPrice = 1;
+
+            // Detect big single-tick moves (mostly fires during market events)
+            const oldPrice = state.stocks[ticker].currentPrice;
+            const pctChange = (nextPrice - oldPrice) / oldPrice;
+            if (pctChange >= 0.20) {
+              playBigGain();
+              bigGainSet = ticker;
+            } else if (pctChange <= -0.20) {
+              playBigLoss();
+              bigLossSet = ticker;
+            }
 
             newStocks[ticker] = { ...stock, currentPrice: nextPrice };
 
@@ -598,6 +625,8 @@ export const useGameStore = create<GameStore>()(
           activeEvents: newActiveEvents,
           pendingMessages: newPendingMessages,
           threads: newThreads,
+          bigGainTicker: bigGainSet,
+          bigLossTicker: bigLossSet,
         });
       },
 
@@ -703,6 +732,7 @@ export const useGameStore = create<GameStore>()(
         const { cash, sharkDebt, threads, day } = get();
         const netWorth = get().getNetWorth();
         if (sharkDebt + amount > netWorth) return;
+        playBorrow();
         const confirmMsg = {
           id: `shark-borrow-${day}`,
           sender: 'Loan Shark',
@@ -1142,7 +1172,8 @@ export const useGameStore = create<GameStore>()(
       },
       partialize: (state) => {
         const { lastFlash, popups, intradayBars, netWorthBars,
-                pendingMessages, activeEvents, marketTime, marketIsOpen, ...rest } = state;
+                pendingMessages, activeEvents, marketTime, marketIsOpen,
+                bigGainTicker, bigLossTicker, ...rest } = state;
         return rest;
       },
     }

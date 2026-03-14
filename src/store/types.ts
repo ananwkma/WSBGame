@@ -175,6 +175,8 @@ export interface GameState {
   } | null;
   marketTime: number;         // minutes since midnight (0–1440); resets each day
   marketIsOpen: boolean;      // derived: 570 <= marketTime < 960
+  bigGainTicker: string | null;  // ticker that gained 20%+ in last tick; cleared each tick
+  bigLossTicker: string | null;  // ticker that lost 20%+ in last tick; cleared each tick
   intradayBars: Record<string, CandleBar[]>;    // 1-min bars per ticker, current day only
   netWorthBars: CandleBar[];  // 1-min net worth bars, current day only
   scheduledEvents: MarketEvent[];   // seeded at advanceDay time for the upcoming day

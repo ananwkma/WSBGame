@@ -6,6 +6,7 @@ import { IntraChart } from './IntraChart';
 import { SwipeConfirm } from './SwipeConfirm';
 import { OptionsChain } from './OptionsChain';
 import { PerformanceIndicator } from '../Feedback/PerformanceIndicator';
+import { ParticleBurst } from '../Feedback/ParticleBurst';
 import { formatCurrency, calculatePercentChange, scaledIV } from '../../utils/marketUtils';
 import './Robbinghood.css';
 
@@ -44,6 +45,9 @@ export const Robbinghood: React.FC = () => {
     costBasis, tradeHistory, day, currentDay, sharkDebt,
     intradayBars, marketTime, marketIsOpen, netWorthBars,
   } = useGameStore();
+
+  const bigGainTicker = useGameStore((s) => s.bigGainTicker);
+  const bigLossTicker = useGameStore((s) => s.bigLossTicker);
 
   // Reset trade amount when selection changes
   React.useEffect(() => {
@@ -415,16 +419,20 @@ export const Robbinghood: React.FC = () => {
                    );
                  })()}
 
-                 <div className="chart-container" style={{ width: '100%', backgroundColor: '#2b2b26', marginBottom: '16px', border: '2px solid #706b66', padding: '8px' }}>
-                   <IntraChart
-                     intradayBars={intradayBars[selectedStock] || []}
-                     dailyHistory={stocks[selectedStock].history}
-                     marketTime={marketTime}
-                     marketIsOpen={marketIsOpen}
-                     ticker={selectedStock}
-                     showCandleToggle={true}
-                   />
-                 </div>
+                <div style={{ position: 'relative' }}>
+                  <div className="chart-container" style={{ width: '100%', backgroundColor: '#2b2b26', marginBottom: '16px', border: '2px solid #706b66', padding: '8px' }}>
+                    <IntraChart
+                      intradayBars={intradayBars[selectedStock] || []}
+                      dailyHistory={stocks[selectedStock].history}
+                      marketTime={marketTime}
+                      marketIsOpen={marketIsOpen}
+                      ticker={selectedStock}
+                      showCandleToggle={true}
+                    />
+                  </div>
+                  <ParticleBurst type="coin" active={bigGainTicker === selectedStock} />
+                  <ParticleBurst type="flame" active={bigLossTicker === selectedStock} />
+                </div>
                  
                  <div className="trade-controls">
                     <div style={{ marginBottom: '16px' }}>
