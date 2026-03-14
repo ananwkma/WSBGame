@@ -3,6 +3,7 @@
 ## Phase 15: Live Market Events Polish
 - [x] **Plan 01 — (Wave 1 parallel)**: Real-time engine (plan 01 in wave)
 - [x] **Plan 02 — UI Branding & Cleanup**: Phone renamed uPhone/uMessage/readit; HYPE LEVEL bar removed; DualViewShell hype jitter eliminated; laptop readit tab added with u/DegenTrader WSB onboarding post and 6 troll tutorial replies.
+- [x] **Plan 05 — Sound & Polish**: Chiptune sound engine (market bells, big gain/loss, borrow sound); pixel coin/flame particle bursts on 20%+ tick moves; EndingScreen framer-motion entrance animation.
 
 ## Key Decisions (Phase 15)
 - Removed useGameStore entirely from DualViewShell — static animate {x:0,y:0}
@@ -51,12 +52,16 @@
 - formatCurrency uses Math.abs internally; negative net worth sign handled at call site in Robbinghood.tsx to avoid breaking PerformanceIndicator.
 
 ## Current Focus
-- Phase 15 in progress. Plan 15-01 complete (2026-03-14).
-- Last session: Completed 15-01-PLAN.md (2026-03-14)
+- Phase 15 in progress. Plans 15-01, 15-02, 15-05 complete (2026-03-14).
+- Last session: Completed 15-05-PLAN.md (2026-03-14)
 
 ## Key Decisions
 - useMarketClock uses getState().tickMarket() (non-stale closure) for setInterval
 - Per-tick vol = dailyVol/sqrt(390) to preserve daily variance across 390 market ticks
 - Persist version bumped to 1 with migration stripping hype and nextTurn from saved state
 - advanceDay resets marketTime to 480 (8am pre-market) for all days after Day 1; Day 1 starts at 360 (6am)
+- AudioContext created lazily on first playTone call — avoids browser autoplay policy violations before user interaction
+- bigGainTicker/bigLossTicker are transient fields excluded from persist partialize; reset to null each tick
+- 20% single-tick threshold for particle/sound trigger fires mainly during market event price multipliers
+- ParticleBurst placed in relative wrapper around chart container in Robbinghood stock detail view
 
