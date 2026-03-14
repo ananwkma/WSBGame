@@ -4,10 +4,10 @@ import { ChatApp } from './ChatApp';
 import { WsbForum } from './WsbForum';
 import './Phone.css';
 
-type PhoneTab = 'CHAT' | 'FORUM';
+type PhoneTab = 'UMESSAGE' | 'READIT';
 
 export const PhoneApp: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<PhoneTab>('CHAT');
+  const [activeTab, setActiveTab] = useState<PhoneTab>('UMESSAGE');
 
   return (
     <motion.div
@@ -17,7 +17,7 @@ export const PhoneApp: React.FC = () => {
       transition={{ duration: 0.2, ease: "easeOut" }}
     >
       <div className="phone-app-header">
-        <span>PHONE v1.0</span>
+        <span>uPhone</span>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <span>📶</span>
           <div className="battery-container">
@@ -31,21 +31,21 @@ export const PhoneApp: React.FC = () => {
       </div>
 
       <div className="phone-app-content-wrapper" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {activeTab === 'CHAT' ? <ChatApp /> : <WsbForum />}
+        {activeTab === 'UMESSAGE' ? <ChatApp /> : <WsbForum />}
       </div>
 
       <div className="phone-tabs">
-        <button 
-          className={`phone-tab ${activeTab === 'CHAT' ? 'active' : ''}`}
-          onClick={() => setActiveTab('CHAT')}
+        <button
+          className={`phone-tab ${activeTab === 'UMESSAGE' ? 'active' : ''}`}
+          onClick={() => setActiveTab('UMESSAGE')}
         >
-          CHAT
+          uMessage
         </button>
-        <button 
-          className={`phone-tab ${activeTab === 'FORUM' ? 'active' : ''}`}
-          onClick={() => setActiveTab('FORUM')}
+        <button
+          className={`phone-tab ${activeTab === 'READIT' ? 'active' : ''}`}
+          onClick={() => setActiveTab('READIT')}
         >
-          FORUM
+          readit
         </button>
       </div>
     </motion.div>

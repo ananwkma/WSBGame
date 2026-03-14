@@ -1,5 +1,14 @@
 # Project State
 
+## Phase 15: Live Market Events Polish
+- [x] **Plan 01 — (Wave 1 parallel)**: Real-time engine (plan 01 in wave)
+- [x] **Plan 02 — UI Branding & Cleanup**: Phone renamed uPhone/uMessage/readit; HYPE LEVEL bar removed; DualViewShell hype jitter eliminated; laptop readit tab added with u/DegenTrader WSB onboarding post and 6 troll tutorial replies.
+
+## Key Decisions (Phase 15)
+- Removed useGameStore entirely from DualViewShell — static animate {x:0,y:0}
+- ReaditTab uses existing pixel.css classes — no new CSS file
+- LaptopBrowser address bar URL updated per-tab
+
 ## Completed Phases
 - [x] **Phase 1: Core Shell & Visual Filter**
 - [x] **Phase 2: Trading Engine & UI**
@@ -50,3 +59,4 @@
 - Per-tick vol = dailyVol/sqrt(390) to preserve daily variance across 390 market ticks
 - Persist version bumped to 1 with migration stripping hype and nextTurn from saved state
 - advanceDay resets marketTime to 480 (8am pre-market) for all days after Day 1; Day 1 starts at 360 (6am)
+
