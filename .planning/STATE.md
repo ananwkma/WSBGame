@@ -1,5 +1,14 @@
 # Project State
 
+## Phase 15: Live Market Events Polish
+- [x] **Plan 01 — (Wave 1 parallel)**: Real-time engine (plan 01 in wave)
+- [x] **Plan 02 — UI Branding & Cleanup**: Phone renamed uPhone/uMessage/readit; HYPE LEVEL bar removed; DualViewShell hype jitter eliminated; laptop readit tab added with u/DegenTrader WSB onboarding post and 6 troll tutorial replies.
+
+## Key Decisions (Phase 15)
+- Removed useGameStore entirely from DualViewShell — static animate {x:0,y:0}
+- ReaditTab uses existing pixel.css classes — no new CSS file
+- LaptopBrowser address bar URL updated per-tab
+
 ## Completed Phases
 - [x] **Phase 1: Core Shell & Visual Filter**
 - [x] **Phase 2: Trading Engine & UI**
@@ -42,5 +51,5 @@
 - formatCurrency uses Math.abs internally; negative net worth sign handled at call site in Robbinghood.tsx to avoid breaking PerformanceIndicator.
 
 ## Current Focus
-- Phase 14 fully complete (verified 2026-03-14). Roadmap exhausted — no further phases planned.
-- Last session: Completed 14-03 verification (2026-03-14)
+- Phase 15 in progress. Plan 02 (UI branding/cleanup) complete.
+- Last session: Completed 15-02 (2026-03-14)

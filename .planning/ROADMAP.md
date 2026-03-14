@@ -74,7 +74,7 @@
 **Plans**: 6 plans
 **Plan list**:
 - [ ] 15-01-PLAN.md — Store engine: tickMarket/advanceDay split, CandleBar/MarketEvent types, useMarketClock hook, hype removal
-- [ ] 15-02-PLAN.md — Branding & UI cleanup: uPhone/uMessage/readit renames, HYPE LEVEL removal, laptop readit tab + onboarding post
+- [x] 15-02-PLAN.md — Branding & UI cleanup: uPhone/uMessage/readit renames, HYPE LEVEL removal, laptop readit tab + onboarding post
 - [ ] 15-03-PLAN.md — IntraChart component: timeframe tabs, candle/line toggle, crosshair, OHLC aggregation, earnings countdown
 - [ ] 15-04-PLAN.md — Market events: seeding, tick firing, IV interaction, news panel, Loan Shark dialogue expansion
 - [ ] 15-05-PLAN.md — Polish: soundEngine chiptune, ParticleBurst coin/flame, EndingScreen entrance animation
@@ -98,5 +98,5 @@
 | 11: Granular Narrative | 3/3 | Completed | 2026-03-08 |
 | 12: Multiple Endings | 3/3 | Completed | 2026-03-09 |
 | 14: Shark Loans | 3/3 | Completed | 2026-03-14 |
-| 15: Live Market & Polish | 0/6 | Planned | — |
+| 15: Live Market & Polish | 1/6 | In Progress | — |
 
