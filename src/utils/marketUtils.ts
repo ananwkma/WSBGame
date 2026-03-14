@@ -1,4 +1,4 @@
-import type { HistoryPoint } from '../store/types';
+import type { CandleBar, HistoryPoint } from '../store/types';
 
 /**
  * Scales implied volatility by days-to-expiry.
@@ -115,6 +115,34 @@ export const stdNormalPDF = (x: number): number => {
  * @param r Risk-free interest rate (e.g., 0.05 for 5%)
  * @returns { price, delta, gamma, theta, vega }
  */
+/**
+ * Aggregates 1-minute CandleBar[] into larger timeframe bars.
+ * @param bars - Array of 1-minute bars sorted by openTime ascending
+ * @param intervalMinutes - Aggregation interval (1, 30, 60, 390 for daily)
+ */
+export function groupBars(bars: CandleBar[], intervalMinutes: number): CandleBar[] {
+  if (bars.length === 0) return [];
+  const grouped: CandleBar[] = [];
+  let current: CandleBar | null = null;
+
+  for (const bar of bars) {
+    const bucketTime = Math.floor(bar.openTime / intervalMinutes) * intervalMinutes;
+    if (!current || current.openTime !== bucketTime) {
+      if (current) grouped.push(current);
+      current = { openTime: bucketTime, open: bar.open, high: bar.high, low: bar.low, close: bar.close };
+    } else {
+      current = {
+        ...current,
+        high: Math.max(current.high, bar.high),
+        low: Math.min(current.low, bar.low),
+        close: bar.close,
+      };
+    }
+  }
+  if (current) grouped.push(current);
+  return grouped;
+}
+
 export const calculateBS = (
   type: 'CALL' | 'PUT',
   s: number,
