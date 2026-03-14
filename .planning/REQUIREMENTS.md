@@ -43,6 +43,12 @@
 - **TRADE-11: Options Greeks:** Real-time calculation of Delta, Gamma, Theta, and Vega for all options.
 - **TRADE-12: IV Crush Logic:** IV spikes during "Hype" phases and drops after significant price movements or "Earnings."
 
+## Live Market & Events (Phase 15)
+- **TRADE-13: Live Market Clock:** Stock prices update continuously on a real-time interval (2 real seconds = 1 in-game minute; 1 in-game hour = 2 real minutes). Price movement magnitude scales with each stock's volatility profile.
+- **TRADE-14: Intraday Chart Timeframes:** Charts support multiple zoom levels showing OHLC-style data: 1-minute, 30-minute, 1-hour, and daily views. Daily chart shows full-session movement.
+- **EVT-01: Market Events:** Scheduled or probabilistic intraday events (earnings, Fed announcements, meme stock frenzies) cause significant price spikes/drops and narrative reactions.
+- **UX-01: UI & Animation Polish:** Key game moments (big gains, big losses, borrowing, endings) have micro-animations and/or audio cues consistent with the pixel art aesthetic.
+
 ## Traceability
 
 | Requirement | Phase | Status |

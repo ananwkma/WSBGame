@@ -62,6 +62,16 @@
 - [x] 14-02-PLAN.md — UI layer: SharkLoanPanel in MessageThread, SHARK DEBT row in Portfolio tab, EndingScreen stat
 - [x] 14-03-PLAN.md — Verification: tsc clean build, human gameplay loop verification (7 checks)
 
+### Phase 15: Live Market, Events & Polish
+**Goal**: Replace the turn-based market loop with a continuous real-time engine (2 real seconds = 1 in-game minute), add scheduled market events that cause narrative-driven price shocks, introduce multi-timeframe intraday charts, and polish key game moments with micro-animations.
+**Depends on**: Phase 14
+**Requirements**: TRADE-13, TRADE-14, EVT-01, UX-01
+**Success Criteria**:
+  1. Stock prices update automatically on a timer without any button press — movement amplitude scales with per-stock volatility.
+  2. Market events (earnings, Fed, meme frenzy) fire on schedule/probability during a trading day and cause visible price shocks with narrative reactions.
+  3. Price charts support at least two timeframe views (e.g. 1-min and daily) showing intraday OHLC or sampled data.
+  4. Key moments (large gain/loss, borrow, game end) have at least one micro-animation or audio cue.
+
 ## Progress Table
 
 
@@ -80,4 +90,5 @@
 | 11: Granular Narrative | 3/3 | Completed | 2026-03-08 |
 | 12: Multiple Endings | 3/3 | Completed | 2026-03-09 |
 | 14: Shark Loans | 3/3 | Completed | 2026-03-14 |
+| 15: Live Market & Polish | 0/? | Planned | — |
 
