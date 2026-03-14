@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useGameStore } from '../../store/useGameStore';
 import './Shell.css';
 
 export type FocusArea = 'laptop' | 'phone';
@@ -16,15 +15,12 @@ interface DualViewShellProps {
  * Split-view layout for Laptop and Phone interfaces.
  * Focus state determines which view is larger and primary.
  */
-export const DualViewShell: React.FC<DualViewShellProps> = ({ 
-  focus, 
+export const DualViewShell: React.FC<DualViewShellProps> = ({
+  focus,
   setFocus,
   laptopContent,
   phoneContent
 }) => {
-  const hype = useGameStore((state) => state.hype);
-  const isHighHype = hype > 80;
-
   return (
     <div className={`dualViewShell ${focus === 'laptop' ? 'focusLaptop' : 'focusPhone'}`}>
       <div className="laptopView" onClick={() => setFocus('laptop')}>
@@ -33,18 +29,10 @@ export const DualViewShell: React.FC<DualViewShellProps> = ({
         </div>
       </div>
 
-      <motion.div 
-        className="phoneView" 
+      <motion.div
+        className="phoneView"
         onClick={() => setFocus('phone')}
-        animate={isHighHype ? {
-          x: [0, -1, 1, -1, 1, 0],
-          y: [0, 1, -1, 1, -1, 0],
-        } : { x: 0, y: 0 }}
-        transition={isHighHype ? {
-          duration: 0.1,
-          repeat: Infinity,
-          ease: "linear"
-        } : {}}
+        animate={{ x: 0, y: 0 }}
       >
         <div className="screenContent">
           {phoneContent || <div>[Phone Interface]</div>}
