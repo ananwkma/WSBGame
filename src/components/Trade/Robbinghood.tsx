@@ -6,6 +6,7 @@ import { PriceChart } from './PriceChart';
 import { SwipeConfirm } from './SwipeConfirm';
 import { OptionsChain } from './OptionsChain';
 import { PerformanceIndicator } from '../Feedback/PerformanceIndicator';
+import { ParticleBurst } from '../Feedback/ParticleBurst';
 import { formatCurrency, calculatePercentChange, scaledIV } from '../../utils/marketUtils';
 import './Robbinghood.css';
 
@@ -34,6 +35,9 @@ export const Robbinghood: React.FC = () => {
     getNetWorth, netWorthHistory, optionsHoldings,
     costBasis, tradeHistory, day, sharkDebt
   } = useGameStore();
+
+  const bigGainTicker = useGameStore((s) => s.bigGainTicker);
+  const bigLossTicker = useGameStore((s) => s.bigLossTicker);
 
   // Reset trade amount when selection changes
   React.useEffect(() => {
@@ -392,12 +396,16 @@ export const Robbinghood: React.FC = () => {
                    );
                  })()}
 
-                 <div className="chart-container" style={{ width: '100%', height: '360px', backgroundColor: '#2b2b26', marginBottom: '16px', border: '2px solid #706b66' }}>
-                    <PriceChart
-                      history={stocks[selectedStock].history}
-                      width={300}
-                      height={360}
-                    />
+                 <div style={{ position: 'relative' }}>
+                   <div className="chart-container" style={{ width: '100%', height: '360px', backgroundColor: '#2b2b26', marginBottom: '16px', border: '2px solid #706b66' }}>
+                      <PriceChart
+                        history={stocks[selectedStock].history}
+                        width={300}
+                        height={360}
+                      />
+                   </div>
+                   <ParticleBurst type="coin" active={bigGainTicker === selectedStock} />
+                   <ParticleBurst type="flame" active={bigLossTicker === selectedStock} />
                  </div>
                  
                  <div className="trade-controls">
