@@ -71,6 +71,14 @@
   2. Market events (earnings, Fed, meme frenzy) fire on schedule/probability during a trading day and cause visible price shocks with narrative reactions.
   3. Price charts support at least two timeframe views (e.g. 1-min and daily) showing intraday OHLC or sampled data.
   4. Key moments (large gain/loss, borrow, game end) have at least one micro-animation or audio cue.
+**Plans**: 6 plans
+**Plan list**:
+- [ ] 15-01-PLAN.md — Store engine: tickMarket/advanceDay split, CandleBar/MarketEvent types, useMarketClock hook, hype removal
+- [ ] 15-02-PLAN.md — Branding & UI cleanup: uPhone/uMessage/readit renames, HYPE LEVEL removal, laptop readit tab + onboarding post
+- [ ] 15-03-PLAN.md — IntraChart component: timeframe tabs, candle/line toggle, crosshair, OHLC aggregation, earnings countdown
+- [ ] 15-04-PLAN.md — Market events: seeding, tick firing, IV interaction, news panel, Loan Shark dialogue expansion
+- [ ] 15-05-PLAN.md — Polish: soundEngine chiptune, ParticleBurst coin/flame, EndingScreen entrance animation
+- [ ] 15-06-PLAN.md — Verification: tsc clean build + human gameplay loop verification (7 checks)
 
 ## Progress Table
 
@@ -90,5 +98,5 @@
 | 11: Granular Narrative | 3/3 | Completed | 2026-03-08 |
 | 12: Multiple Endings | 3/3 | Completed | 2026-03-09 |
 | 14: Shark Loans | 3/3 | Completed | 2026-03-14 |
-| 15: Live Market & Polish | 0/? | Planned | — |
+| 15: Live Market & Polish | 0/6 | Planned | — |
 
