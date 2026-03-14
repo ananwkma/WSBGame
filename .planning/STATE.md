@@ -42,5 +42,11 @@
 - formatCurrency uses Math.abs internally; negative net worth sign handled at call site in Robbinghood.tsx to avoid breaking PerformanceIndicator.
 
 ## Current Focus
-- Phase 14 fully complete (verified 2026-03-14). Roadmap exhausted — no further phases planned.
-- Last session: Completed 14-03 verification (2026-03-14)
+- Phase 15 in progress. Plan 15-01 complete (2026-03-14).
+- Last session: Completed 15-01-PLAN.md (2026-03-14)
+
+## Key Decisions
+- useMarketClock uses getState().tickMarket() (non-stale closure) for setInterval
+- Per-tick vol = dailyVol/sqrt(390) to preserve daily variance across 390 market ticks
+- Persist version bumped to 1 with migration stripping hype and nextTurn from saved state
+- advanceDay resets marketTime to 480 (8am pre-market) for all days after Day 1; Day 1 starts at 360 (6am)
