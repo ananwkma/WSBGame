@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useGameStore } from '../../../store/useGameStore';
 import { ChatApp } from './ChatApp';
 import { WsbForum } from './WsbForum';
 import './Phone.css';
@@ -9,10 +8,9 @@ type PhoneTab = 'CHAT' | 'FORUM';
 
 export const PhoneApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<PhoneTab>('CHAT');
-  const hype = useGameStore((state) => state.hype);
 
   return (
-    <motion.div 
+    <motion.div
       className="phone-app-container"
       initial={{ scale: 0.95, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
@@ -29,19 +27,6 @@ export const PhoneApp: React.FC = () => {
             <div className="battery-tip"></div>
             <span className="battery-text">5%</span>
           </div>
-        </div>
-      </div>
-
-      <div className="fomo-meter-container">
-        <div className="fomo-label">
-          <span>HYPE LEVEL</span>
-          <span>{hype}%</span>
-        </div>
-        <div className="fomo-bar-bg">
-          <div 
-            className="fomo-bar-fill" 
-            style={{ width: `${hype}%` }}
-          />
         </div>
       </div>
 
