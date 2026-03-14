@@ -115,6 +115,35 @@ export interface GameEvent {
   payload: Message | ForumPost | any;
 }
 
+export interface CandleBar {
+  openTime: number;   // in-game minutes since midnight
+  open: number;       // cents
+  high: number;       // cents
+  low: number;        // cents
+  close: number;      // cents
+}
+
+export type MarketEventType = 'EARNINGS' | 'FED_ANNOUNCEMENT' | 'MEME_FRENZY' | 'INSIDER_LEAK';
+
+export interface MarketEvent {
+  id: string;
+  type: MarketEventType;
+  ticker: string | null;   // null for macro events (FED_ANNOUNCEMENT)
+  day: number;
+  triggerTime: number;     // in-game minutes since midnight
+  priceMultiplier: number; // e.g. 1.3 for +30%, 0.7 for -30%
+  rampMinutes: number;     // ticks to spread the ramp over (1 or 2)
+  fake?: boolean;          // INSIDER_LEAK only — fake leaks do nothing
+  fired: boolean;
+  narrativeKey: string;    // key into event template pool
+}
+
+export interface ScheduledMessage {
+  message: Message;
+  deliverAt: number;  // in-game minutes since midnight
+  delivered: boolean;
+}
+
 export interface GameState {
   cash: number; // in cents
   sharkDebt: number; // separate high-interest debt
@@ -124,7 +153,7 @@ export interface GameState {
   stocks: Record<StockTicker, StockData>;
   turn: number;
   day: number;
-  hype: number; // 0-100
+  currentDay: number;
   karma: number; // Reddit-style points
   threads: Record<string, Thread>;
   forumPosts: ForumPost[];
@@ -144,6 +173,13 @@ export interface GameState {
     day: number;
     wasCorrect: boolean | null;
   } | null;
+  marketTime: number;         // minutes since midnight (0–1440); resets each day
+  marketIsOpen: boolean;      // derived: 570 <= marketTime < 960
+  intradayBars: Record<string, CandleBar[]>;    // 1-min bars per ticker, current day only
+  netWorthBars: CandleBar[];  // 1-min net worth bars, current day only
+  scheduledEvents: MarketEvent[];   // seeded at advanceDay time for the upcoming day
+  activeEvents: MarketEvent[];      // events fired today, consumed by news panel
+  pendingMessages: ScheduledMessage[]; // mid-session messages queue
 }
 
 export interface GameActions {
@@ -152,7 +188,9 @@ export interface GameActions {
   buyOption: (ticker: StockTicker, type: OptionType, amount: number, strikePrice: number, greeks: { delta: number, gamma: number, theta: number, vega: number, premium?: number }) => void;
   sellOption: (optionId: string, amount: number) => void;
   getNetWorth: () => number;
-  nextTurn: () => void;
+  tickMarket: () => void;
+  advanceDay: () => void;
+  dismissEvent: (id: string) => void;
   processEvents: () => { newThreads: Record<string, Thread>; newForumPosts: ForumPost[] };
   triggerFlash: (type: FeedbackType) => void;
   addPopup: (text: string, type: FeedbackType, x?: number, y?: number) => void;

@@ -10,21 +10,24 @@ import PopupText from './components/Feedback/PopupText';
 import { DayCounter } from './components/Feedback/DayCounter';
 import { EndingScreen } from './components/Feedback/EndingScreen';
 import { useGameStore } from './store/useGameStore';
+import { useMarketClock } from './hooks/useMarketClock';
 import './styles/pixel.css';
 
 function App() {
   const [focus, setFocus] = useState<FocusArea>('laptop');
   const gameStatus = useGameStore((state) => state.gameStatus);
   const endingType = useGameStore((state) => state.endingType);
-  const nextTurn = useGameStore((state) => state.nextTurn);
+  const advanceDay = useGameStore((state) => state.advanceDay);
+
+  useMarketClock();
 
   return (
     <>
       <PaletteFilter />
       <GameViewport>
         <DayCounter />
-        <button className="next-turn-btn" onClick={nextTurn}>
-          NEXT TURN
+        <button className="next-turn-btn" onClick={advanceDay}>
+          NEXT DAY
         </button>
         <ScreenFlash />
         <PopupText />

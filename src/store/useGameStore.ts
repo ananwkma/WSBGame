@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { GameStore, StockTicker, GameEvent, EndingType, StockData } from './types';
+import type { GameStore, StockTicker, GameEvent, EndingType, StockData, CandleBar } from './types';
 import { generateHistoricalData, calculateBS, scaledIV } from '../utils/marketUtils';
 import { getRandomTemplate, getRandomPrediction, pickSharkMessage } from '../data/messageTemplates';
 import type { PerformanceTier } from '../data/messageTemplates';
@@ -241,8 +241,15 @@ const getInitialState = () => {
     isMarginCall: false,
     turn: 1,
     day: 1,
-    hype: 0,
+    currentDay: 1,
     karma: 0,
+    marketTime: 360,         // 6:00am for Day 1
+    marketIsOpen: false,     // market closed at start
+    intradayBars: {},        // empty map — keyed by ticker symbol
+    netWorthBars: [],
+    scheduledEvents: [],
+    activeEvents: [],
+    pendingMessages: [],
     threads: initialThreads,
     forumPosts: INITIAL_EVENTS.filter(e => e.day === 1 && e.type === 'POST').map(e => e.payload),
     eventQueue: INITIAL_EVENTS,
@@ -307,7 +314,7 @@ export const useGameStore = create<GameStore>()(
       },
 
       buyStock: (ticker, amount) => {
-        const { cash, stocks, holdings, costBasis, tradeHistory, day, hype, triggerFlash, addPopup } = get();
+        const { cash, stocks, holdings, costBasis, tradeHistory, day, triggerFlash, addPopup } = get();
         const currentPrice = stocks[ticker].currentPrice;
         const cost = currentPrice * amount;
 
@@ -327,9 +334,6 @@ export const useGameStore = create<GameStore>()(
             day,
           };
 
-          // Buying increases hype
-          const newHype = Math.min(100, hype + 5);
-
           set({
             cash: cash - cost,
             holdings: {
@@ -341,7 +345,6 @@ export const useGameStore = create<GameStore>()(
               [ticker]: newBasis,
             },
             tradeHistory: [tradeEntry, ...tradeHistory],
-            hype: newHype,
           });
           triggerFlash('positive');
           const phrases = ['TO THE MOON!', 'LFG!', '🚀🚀🚀', 'BOUGHT!'];
@@ -355,7 +358,7 @@ export const useGameStore = create<GameStore>()(
       },
 
       buyOption: (ticker, type, amount, strikePrice, greeks) => {
-        const { cash, stocks, day, hype, triggerFlash, addPopup } = get();
+        const { cash, stocks, day, triggerFlash, addPopup } = get();
         const stock = stocks[ticker];
 
         // All options now expire at the end of the game (Day 11)
@@ -395,8 +398,6 @@ export const useGameStore = create<GameStore>()(
             day,
           };
 
-          const newHype = Math.min(100, hype + 8); // Options are more hype
-
           set((state) => {
             const existingIdx = state.optionsHoldings.findIndex(
               o => o.ticker === ticker && o.type === type && o.strikePrice === strikePrice
@@ -421,7 +422,6 @@ export const useGameStore = create<GameStore>()(
               cash: state.cash - totalCost,
               optionsHoldings: updatedOptions,
               tradeHistory: [tradeEntry, ...state.tradeHistory],
-              hype: newHype,
             };
           });
 
@@ -497,6 +497,113 @@ export const useGameStore = create<GameStore>()(
 
         return cash + stockValue + optionsValue - sharkDebt;
       },
+
+      tickMarket: () => {
+        const state = get();
+        if (state.gameStatus !== 'playing') return;
+
+        const newTime = state.marketTime + 1;
+        const newIsOpen = newTime >= 570 && newTime < 960; // 9:30am–4pm
+
+        // Per-tick volatility scaling: divide daily vol by sqrt(390 ticks/day)
+        const TICKS_PER_DAY = 390;
+        const volScale = Math.sqrt(TICKS_PER_DAY);
+
+        const newStocks = { ...state.stocks };
+        const newIntradayBars: Record<string, CandleBar[]> = { ...state.intradayBars };
+
+        if (newIsOpen) {
+          // Move prices for each stock
+          Object.keys(newStocks).forEach((ticker) => {
+            const stock = newStocks[ticker];
+            const { minVol, maxVol } = INITIAL_STOCKS[ticker as keyof typeof INITIAL_STOCKS];
+            const dailyVol = Math.random() * (maxVol - minVol) + minVol;
+            const perTickVol = dailyVol / volScale;
+            const direction = Math.random() > 0.5 ? 1 : -1;
+            const change = 1 + (perTickVol * direction);
+            let nextPrice = Math.round(stock.currentPrice * change);
+            if (nextPrice < 1) nextPrice = 1;
+
+            newStocks[ticker] = { ...stock, currentPrice: nextPrice };
+
+            // Upsert 1-min OHLC bar
+            const bars = newIntradayBars[ticker] || [];
+            const lastBar = bars[bars.length - 1];
+            if (lastBar && lastBar.openTime === newTime) {
+              newIntradayBars[ticker] = [
+                ...bars.slice(0, -1),
+                { ...lastBar, high: Math.max(lastBar.high, nextPrice), low: Math.min(lastBar.low, nextPrice), close: nextPrice },
+              ];
+            } else {
+              newIntradayBars[ticker] = [
+                ...bars,
+                { openTime: newTime, open: nextPrice, high: nextPrice, low: nextPrice, close: nextPrice },
+              ];
+            }
+          });
+        }
+
+        // Check for pending event triggers
+        const newScheduledEvents = state.scheduledEvents.map((evt) => {
+          if (!evt.fired && evt.day === state.currentDay && evt.triggerTime <= newTime) {
+            return { ...evt, fired: true };
+          }
+          return evt;
+        });
+        const newlyFired = newScheduledEvents.filter(
+          (evt, i) => evt.fired && !state.scheduledEvents[i].fired
+        );
+        const newActiveEvents = newlyFired.length > 0
+          ? [...state.activeEvents, ...newlyFired]
+          : state.activeEvents;
+
+        // Deliver any pending mid-session messages
+        const newPendingMessages = state.pendingMessages.map((pm) =>
+          !pm.delivered && pm.deliverAt <= newTime ? { ...pm, delivered: true } : pm
+        );
+        const dueMsgs = newPendingMessages.filter((pm, i) => pm.delivered && !state.pendingMessages[i].delivered);
+        let newThreads = state.threads;
+        if (dueMsgs.length > 0) {
+          newThreads = { ...state.threads };
+          dueMsgs.forEach(({ message }) => {
+            const existing = newThreads[message.sender] || [];
+            newThreads[message.sender] = [...existing, message];
+          });
+        }
+
+        // Net worth bar for portfolio chart
+        const currentNetWorth = get().getNetWorth();
+        const nwBars = state.netWorthBars;
+        const lastNwBar = nwBars[nwBars.length - 1];
+        let newNetWorthBars: CandleBar[];
+        if (lastNwBar && lastNwBar.openTime === newTime) {
+          newNetWorthBars = [
+            ...nwBars.slice(0, -1),
+            { ...lastNwBar, high: Math.max(lastNwBar.high, currentNetWorth), low: Math.min(lastNwBar.low, currentNetWorth), close: currentNetWorth },
+          ];
+        } else {
+          newNetWorthBars = [
+            ...nwBars,
+            { openTime: newTime, open: currentNetWorth, high: currentNetWorth, low: currentNetWorth, close: currentNetWorth },
+          ];
+        }
+
+        set({
+          marketTime: newTime,
+          marketIsOpen: newIsOpen,
+          stocks: newStocks,
+          intradayBars: newIntradayBars,
+          netWorthBars: newNetWorthBars,
+          scheduledEvents: newScheduledEvents,
+          activeEvents: newActiveEvents,
+          pendingMessages: newPendingMessages,
+          threads: newThreads,
+        });
+      },
+
+      dismissEvent: (id) => set((state) => ({
+        activeEvents: state.activeEvents.filter((e) => e.id !== id),
+      })),
 
       sellStock: (ticker, amount) => {
         const { cash, stocks, holdings, costBasis, tradeHistory, day, triggerFlash, addPopup } = get();
@@ -647,7 +754,7 @@ export const useGameStore = create<GameStore>()(
         return { newThreads, newForumPosts };
       },
 
-      nextTurn: () => {
+      advanceDay: () => {
         const { turn, day, stocks, eventQueue, cash, holdings, optionsHoldings, karma, triggerFlash, addPopup, processEvents, getNetWorth, guruPrediction } = get();
 
         const prevNetWorth = getNetWorth();
@@ -855,17 +962,6 @@ export const useGameStore = create<GameStore>()(
         const netWorth = nextCash + stockValue + optionsValue - newDebt;
         let newKarma = karma;
 
-        // --- HYPE LOGIC ---
-        let newHype = get().hype;
-        if (prevNetWorth > 0) {
-          const nwChange = Math.abs((netWorth - prevNetWorth) / prevNetWorth);
-          // High volatility in net worth increases hype
-          if (nwChange > 0.1) newHype += Math.min(20, Math.floor(nwChange * 50));
-        }
-        // Daily decay
-        newHype = Math.max(0, newHype - 10);
-        if (newHype > 100) newHype = 100;
-
         const { newThreads, newForumPosts } = processEvents();
 
         // 6. Generate Dynamic Social Content for the NEXT turn
@@ -1005,11 +1101,11 @@ export const useGameStore = create<GameStore>()(
         set((state) => ({
           turn: nextTurnNum,
           day: nextDayNum,
+          currentDay: nextDayNum,
           cash: nextCash,
           stocks: nextStocks,
           optionsHoldings: remainingOptions,
           karma: newKarma,
-          hype: newHype,
           threads: newThreads,
           sharkDebt: newDebt,
           forumPosts: [...dailyForumPosts, ...newForumPosts],
@@ -1020,7 +1116,13 @@ export const useGameStore = create<GameStore>()(
             sentiment,
             day: nextDayNum,
             wasCorrect: wasGuruCorrect
-          }
+          },
+          // Reset intraday market state for the new day
+          marketTime: 480,       // 8:00am — pre-market window before 9:30am open
+          marketIsOpen: false,   // market starts closed; useMarketClock opens it
+          intradayBars: {},
+          netWorthBars: [],
+          activeEvents: [],
         }));
         
         triggerFlash('neutral');
@@ -1030,8 +1132,17 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'wsb-trader-save',
       storage: createJSONStorage(() => localStorage),
+      version: 1,
+      migrate: (persistedState: any, version: number) => {
+        if (version === 0) {
+          const { hype, nextTurn, ...rest } = persistedState as any;
+          return rest;
+        }
+        return persistedState as any;
+      },
       partialize: (state) => {
-        const { lastFlash, popups, ...rest } = state;
+        const { lastFlash, popups, intradayBars, netWorthBars,
+                pendingMessages, activeEvents, marketTime, marketIsOpen, ...rest } = state;
         return rest;
       },
     }
