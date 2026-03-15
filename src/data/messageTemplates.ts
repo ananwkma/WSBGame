@@ -1063,6 +1063,16 @@ const SHARK_MESSAGES_MILD = [
   "I'm a patient man. For now.",
   "Don't forget about me while you're out there playing with your little stocks.",
   "Friendly reminder: the clock doesn't stop while the market's closed.",
+  "20% a day. Simple math. Just making sure you haven't forgotten.",
+  "Hope today was green for you. For both our sakes.",
+  "Still here. Still waiting. Still charging.",
+  "You know the terms. Don't make me explain compounding again.",
+  "Nice day to pay me back. Just a thought.",
+  "Every morning I wake up, your debt goes up. Sleep well?",
+  "Not threatening you. Just checking in. Like I do every day.",
+  "The market closes. My interest doesn't. Remember that.",
+  "I like you. That's why I'm being nice. Pay me something.",
+  "Silence is fine. But the meter's still running.",
 ];
 
 const SHARK_MESSAGES_SERIOUS = [
@@ -1071,6 +1081,16 @@ const SHARK_MESSAGES_SERIOUS = [
   "I've been doing this a long time. People who don't pay regret it.",
   "You owe me big. Don't test my patience.",
   "I've seen guys lose everything. You're heading that way fast.",
+  "The number's getting real now. I need you to feel that.",
+  "Stop staring at charts and start figuring out how to pay me.",
+  "I've been generous. That window is closing.",
+  "Other guys I work with? They don't send polite texts. Think about that.",
+  "Your portfolio going up helps you pay me. Going down helps nobody.",
+  "I know where you eat lunch. I'm not saying that's relevant. It might be.",
+  "Getting to a number I don't usually let slide. Fix it.",
+  "I had a guy once. Smart guy. Thought he could ride it out. He couldn't.",
+  "You're not the first degen who borrowed from me. Most of them paid. Eventually.",
+  "Time is money. My money. Which is technically your debt.",
 ];
 
 const SHARK_MESSAGES_THREATENING = [
@@ -1079,6 +1099,16 @@ const SHARK_MESSAGES_THREATENING = [
   "I've got your address. Just saying.",
   "Your debt is almost bigger than you. That's not good for you.",
   "I've broken legs for less. Pay me.",
+  "My patience expired. What you're seeing now is me being restrained.",
+  "I sent someone by your place last night. He said the lights were on. Good.",
+  "You think this is a game. It stopped being a game a while ago.",
+  "Pay me something. Anything. Show me you're trying.",
+  "People who ignore me at this stage don't tend to ignore me for long.",
+  "Your knees work great right now. Let's keep it that way.",
+  "I will collect one way or another. I prefer cash. You don't want the other way.",
+  "Last chance to do this the clean way. I mean it this time.",
+  "Borrowed from me. Compound interest. Nearly worthless. You've made an error.",
+  "I don't enjoy this part. I just happen to be very good at it.",
 ];
 
 const SHARK_MESSAGES_DONE = [
@@ -1087,6 +1117,16 @@ const SHARK_MESSAGES_DONE = [
   "You've got nothing left to lose — except your kneecaps.",
   "Game over. You owe me everything and then some.",
   "I own you now. Come find me before I find you.",
+  "This is the part where I stop texting and start showing up.",
+  "Nothing left to trade? We can work something else out. You won't like it.",
+  "The number is bigger than your net worth. Let that sink in.",
+  "I've owned men before. It's unpleasant for everyone. You want to avoid that.",
+  "You're not just broke. You're mine-broke. Different thing entirely.",
+  "I gave you chances. Every day was a chance. You wasted them.",
+  "We're done talking numbers. We're talking about you now.",
+  "Come see me. Tonight. Bring whatever you have left.",
+  "You thought you could outrun compounding. Nobody does.",
+  "I've written off debts before. Never happily. And never painlessly for the borrower.",
 ];
 
 export function pickSharkMessage(debtRatio: number, debtCents: number): string {

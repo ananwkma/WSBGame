@@ -11,6 +11,71 @@ const EARNINGS_SCHEDULE: Partial<Record<StockTicker, number>> = {
   '$GAME': 3, '$APE': 4, '$POPC': 5, '$APPO': 6, '$GOOGO': 7, '$BERG': 8,
 };
 
+// Forum post templates keyed by event narrativeKey
+const EVENT_POSTS: Record<string, string[]> = {
+  FED: [
+    'BREAKING: Fed just spoke. Markets are moving. BUY BUY BUY',
+    'Fed meeting dropping any minute. Position accordingly retards',
+    'Powell just said something. Who cares what. Buy calls.',
+    'Fed decision incoming. My puts are sweating rn',
+    'Jerome Powell about to ruin or save us all. Stay tuned.',
+  ],
+  FED_ANNOUNCEMENT: [
+    'BREAKING: Fed just spoke. Markets are moving. BUY BUY BUY',
+    'Fed meeting dropping any minute. Position accordingly retards',
+    'Powell just said something. Who cares what. Buy calls.',
+    'Fed decision incoming. My puts are sweating rn',
+    'Jerome Powell about to ruin or save us all. Stay tuned.',
+  ],
+  MEME_FRENZY: [
+    'EVERYONE IS BUYING {ticker} RIGHT NOW. DO NOT MISS THIS',
+    '{ticker} to the moon confirmed. Source: trust me bro',
+    'WSB is all in on {ticker}. Are you?',
+    '{ticker} printing. What are you waiting for',
+    "I'm up 300% on {ticker} calls. Get in before it's too late",
+    '{ticker} squeeze incoming. Short sellers crying rn.',
+    'Just went all in on {ticker}. Wife is mad. Worth it.',
+    '{ticker} volume through the roof. This is the one boys.',
+  ],
+  MEME_DUMP: [
+    'lmaooo {ticker} rug pull. who bought the top?',
+    '{ticker} dumping hard. should have sold earlier smh',
+    '{ticker} down bad. rip to everyone who FOMO\'d in.',
+    'They always dump after the pump. {ticker} bagholders explain yourselves.',
+  ],
+  INSIDER_LEAK: [
+    'heard some stuff about {ticker} from a friend of a friend...',
+    'not financial advice but {ticker} might moon soon. don\'t ask how I know',
+    'unusual options activity on {ticker}. just sayin.',
+    'my cousin works near the {ticker} building. things are happening.',
+  ],
+  EARNINGS: [
+    '{ticker} earnings incoming. IV through the roof. Options gang where you at',
+    'Big day for {ticker} holders. Let\'s see if the CEO delivers',
+    '{ticker} reporting after close. I have 0 clue what happens but I\'m loaded up on calls.',
+  ],
+  EARNINGS_BEAT: [
+    '{ticker} EARNINGS BEAT. LETSGOOO',
+    '{ticker} crushed estimates. told you all. TOLD YOU.',
+    '{ticker} printing after earnings. Bulls eating good tonight.',
+  ],
+  EARNINGS_MISS: [
+    '{ticker} missed earnings lmao. whoever was long deserved it.',
+    '{ticker} guidance slashed. puts printing. sorry not sorry.',
+    '{ticker} down after earnings. who could have seen this coming (I could)',
+  ],
+};
+
+// Loan Shark market taunt messages for when bearish events fire
+const SHARK_TAUNT_MESSAGES = [
+  "Heard the market didn't treat you well today. Funny how that works.",
+  'Bad day for your portfolio. Good day for me. Clock is ticking.',
+  "Market events are unpredictable, aren't they. Your debt isn't.",
+  "You still owe me. Market going down doesn't change that.",
+  'Market took a bite out of you today. I take a bite every day. Count on it.',
+  'Rough day out there. Debt compounds smooth though. Night night.',
+];
+
 // Seed scheduled events for a given game day
 function seedDayEvents(day: number): MarketEvent[] {
   const events: MarketEvent[] = [];
@@ -306,7 +371,7 @@ const getInitialState = () => {
       avatar: '🦈',
       lastReadDay: 1,
       messages: [
-        { id: 'shark-intro', sender: 'Loan Shark', text: "Heard you been losing big. I got cash, no questions asked. Fast. Easy. Hit me up.", day: 1 }
+        { id: 'shark-intro', sender: 'Loan Shark', text: "Hey. Got your number from a mutual friend. I do short-term capital solutions. Cash up front, simple terms. 20% per day. Every day. Before you ask — yes, every day. Compounding. Call me when the market treats you bad.", day: 1 }
       ]
     },
   };
@@ -587,6 +652,16 @@ export const useGameStore = create<GameStore>()(
 
       tickMarket: () => {
         const state = get();
+
+        // --- DIAGNOSTIC LOGS (remove after debugging) ---
+        if (state.marketTime === 360) {
+          console.log('[DIAG] tickMarket called. gameStatus:', state.gameStatus, 'currentDay:', state.currentDay, 'scheduledEvents:', JSON.stringify(state.scheduledEvents));
+        }
+        if (state.marketTime % 60 === 0) {
+          console.log('[DIAG] tick', state.marketTime, '| gameStatus:', state.gameStatus, '| currentDay:', state.currentDay, '| scheduledEvents count:', state.scheduledEvents.length, '| unfired:', state.scheduledEvents.filter(e => !e.fired).map(e => `${e.type}@${e.triggerTime}(day${e.day})`));
+        }
+        // -------------------------------------------------
+
         if (state.gameStatus !== 'playing') return;
         if (state.marketTime >= 1439) return; // freeze at 11:59 PM, wait for NEXT DAY
 
@@ -660,6 +735,28 @@ export const useGameStore = create<GameStore>()(
           const pending = state.scheduledEvents.filter(e => !e.fired && e.day === state.currentDay);
           if (pending.length > 0) console.log('[PENDING EVENTS]', `marketTime=${newTime}`, pending.map(e => `${e.type} ${e.ticker ?? 'ALL'} @${e.triggerTime}`));
         }
+
+        // IV pre-spike: 5-minute lookahead for EARNINGS and FED events
+        if (newIsOpen) {
+          state.scheduledEvents.forEach((evt) => {
+            if (evt.fired) return;
+            if (evt.day !== state.currentDay) return;
+            if (evt.type !== 'EARNINGS' && evt.type !== 'FED_ANNOUNCEMENT') return;
+            const minutesAway = evt.triggerTime - newTime;
+            if (minutesAway > 0 && minutesAway <= 5) {
+              const spikeTargets: StockTicker[] = evt.ticker
+                ? [evt.ticker as StockTicker]
+                : (Object.keys(newStocks) as StockTicker[]);
+              spikeTargets.forEach((ticker) => {
+                const s = newStocks[ticker];
+                if (!s) return;
+                const maxIv = INITIAL_STOCKS[ticker as keyof typeof INITIAL_STOCKS].maxVol * 10;
+                newStocks[ticker] = { ...s, iv: Math.min(s.iv + 0.05, maxIv) };
+              });
+            }
+          });
+        }
+
         const newScheduledEvents = state.scheduledEvents.map((evt) => {
           if (!evt.fired && evt.day === state.currentDay && evt.triggerTime <= newTime) {
             return { ...evt, fired: true };
@@ -674,29 +771,79 @@ export const useGameStore = create<GameStore>()(
           : state.activeEvents;
 
         // Apply event effects when they fire
+        let newForumPosts = state.forumPosts;
+        let newThreadsFromEvents = state.threads;
         if (newlyFired.length > 0) {
           console.log('[EVENT FIRED]', newlyFired.map(e => `${e.type} ${e.ticker ?? 'ALL'} day=${e.day} triggerTime=${e.triggerTime} multiplier=${e.priceMultiplier}`));
 
           newlyFired.forEach((evt) => {
-            if (evt.fake) return; // fake insider leaks do nothing to price
-            const tickers: StockTicker[] = evt.ticker
-              ? [evt.ticker as StockTicker]
-              : (Object.keys(newStocks) as StockTicker[]); // FED affects all
-            tickers.forEach((ticker) => {
-              const s = newStocks[ticker];
-              if (!s) return;
-              const shocked = Math.round(s.currentPrice * evt.priceMultiplier);
-              newStocks[ticker] = { ...s, currentPrice: Math.max(1, shocked) };
-              // Update intraday bar for shocked price
-              const bars = newIntradayBars[ticker] || [];
-              const lastBar = bars[bars.length - 1];
-              if (lastBar) {
-                newIntradayBars[ticker] = [
-                  ...bars.slice(0, -1),
-                  { ...lastBar, high: Math.max(lastBar.high, shocked), low: Math.min(lastBar.low, shocked), close: shocked },
-                ];
+            // --- Price effect ---
+            if (!evt.fake) {
+              const tickers: StockTicker[] = evt.ticker
+                ? [evt.ticker as StockTicker]
+                : (Object.keys(newStocks) as StockTicker[]); // FED affects all
+              tickers.forEach((ticker) => {
+                const s = newStocks[ticker];
+                if (!s) return;
+                const shocked = Math.round(s.currentPrice * evt.priceMultiplier);
+                // IV crush immediately on EARNINGS/FED fire
+                const crushedIv = (evt.type === 'EARNINGS' || evt.type === 'FED_ANNOUNCEMENT')
+                  ? INITIAL_STOCKS[ticker as keyof typeof INITIAL_STOCKS].iv
+                  : s.iv;
+                newStocks[ticker] = { ...s, currentPrice: Math.max(1, shocked), iv: crushedIv };
+                // Update intraday bar for shocked price
+                const bars = newIntradayBars[ticker] || [];
+                const lastBar = bars[bars.length - 1];
+                if (lastBar) {
+                  newIntradayBars[ticker] = [
+                    ...bars.slice(0, -1),
+                    { ...lastBar, high: Math.max(lastBar.high, shocked), low: Math.min(lastBar.low, shocked), close: shocked },
+                  ];
+                }
+              });
+            }
+
+            // --- Forum post injection ---
+            const postPool = EVENT_POSTS[evt.narrativeKey] || EVENT_POSTS[evt.type] || [];
+            if (postPool.length > 0) {
+              const isMeme = evt.type === 'MEME_FRENZY' || evt.narrativeKey === 'MEME_DUMP' || evt.narrativeKey === 'MEME_FRENZY';
+              const postCount = isMeme ? 2 + Math.floor(Math.random() * 2) : 1; // 2-3 for meme, 1 otherwise
+              const shuffled = [...postPool].sort(() => Math.random() - 0.5);
+              const picked = shuffled.slice(0, Math.min(postCount, shuffled.length));
+              const replaceTicker = (t: string) => evt.ticker ? t.replace(/\{ticker\}/g, evt.ticker) : t;
+              const eventPostEntries = picked.map((title, idx) => ({
+                id: `evt-post-${evt.id}-${idx}`,
+                user: `u/degen_${Math.random().toString(36).slice(2, 6)}`,
+                title: replaceTicker(title),
+                upvotes: Math.floor(Math.random() * 5000) + 100,
+              }));
+              newForumPosts = [...eventPostEntries, ...newForumPosts];
+            }
+
+            // --- Loan Shark taunting on bearish EARNINGS/FED when debt > 0 ---
+            if (
+              (evt.type === 'EARNINGS' || evt.type === 'FED_ANNOUNCEMENT') &&
+              evt.priceMultiplier < 1.0 &&
+              state.sharkDebt > 0
+            ) {
+              const taunt = SHARK_TAUNT_MESSAGES[Math.floor(Math.random() * SHARK_TAUNT_MESSAGES.length)];
+              const tauntMsg = {
+                id: `shark-taunt-${evt.id}`,
+                sender: 'Loan Shark',
+                text: taunt,
+                day: state.currentDay,
+              };
+              const sharkThread = newThreadsFromEvents['Loan Shark'];
+              if (sharkThread) {
+                newThreadsFromEvents = {
+                  ...newThreadsFromEvents,
+                  'Loan Shark': {
+                    ...sharkThread,
+                    messages: [...sharkThread.messages, tauntMsg],
+                  },
+                };
               }
-            });
+            }
           });
         }
 
@@ -705,12 +852,15 @@ export const useGameStore = create<GameStore>()(
           !pm.delivered && pm.deliverAt <= newTime ? { ...pm, delivered: true } : pm
         );
         const dueMsgs = newPendingMessages.filter((pm, i) => pm.delivered && !state.pendingMessages[i].delivered);
-        let newThreads = state.threads;
+        // Start from event-updated threads (includes any shark taunts added above)
+        let newThreads = newThreadsFromEvents;
         if (dueMsgs.length > 0) {
-          newThreads = { ...state.threads };
+          newThreads = { ...newThreadsFromEvents };
           dueMsgs.forEach(({ message }) => {
-            const existing = newThreads[message.sender] || [];
-            newThreads[message.sender] = [...existing, message];
+            const threadEntry = newThreads[message.sender];
+            if (threadEntry) {
+              newThreads[message.sender] = { ...threadEntry, messages: [...threadEntry.messages, message] };
+            }
           });
         }
 
@@ -741,6 +891,7 @@ export const useGameStore = create<GameStore>()(
           activeEvents: newActiveEvents,
           pendingMessages: newPendingMessages,
           threads: newThreads,
+          forumPosts: newForumPosts,
           bigGainTicker: bigGainSet,
           bigLossTicker: bigLossSet,
         });
@@ -1297,7 +1448,7 @@ export const useGameStore = create<GameStore>()(
       },
       partialize: (state) => {
         const { lastFlash, popups, intradayBars, netWorthBars,
-                pendingMessages, activeEvents, marketTime, marketIsOpen,
+                pendingMessages, activeEvents, scheduledEvents, marketTime, marketIsOpen,
                 bigGainTicker, bigLossTicker, ...rest } = state;
         return rest;
       },
