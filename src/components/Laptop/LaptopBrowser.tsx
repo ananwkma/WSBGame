@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Robbinghood } from '../Trade/Robbinghood';
 import { GuruTube } from './GuruTube';
 import { ReaditTab } from './ReaditTab';
+import { NewsPanel } from './NewsPanel';
 import './LaptopBrowser.css';
 
 type LaptopTab = 'ROBBINGHOOD' | 'GURUTUBE' | 'READIT';
@@ -53,6 +54,11 @@ export const LaptopBrowser: React.FC = () => {
           <span>↻</span>
         </div>
         <div className="address-input">{addressUrl}</div>
+      </div>
+
+      {/* News panel — slides in above content when events fire */}
+      <div style={{ position: 'relative' }}>
+        <NewsPanel />
       </div>
 
       {/* Browser Content Area */}

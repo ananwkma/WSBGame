@@ -21,6 +21,14 @@ const STOCK_NAMES: Record<string, string> = {
   '$BERG':  'BERGSHIRE HATHAME',
 };
 
+function fmtTime(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
 const EARNINGS_DAYS: Partial<Record<string, number>> = {
   '$GAME':  3,
   '$POPC':  5,
@@ -33,7 +41,7 @@ const EARNINGS_DAYS: Partial<Record<string, number>> = {
 export const Robbinghood: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('Portfolio');
   const [selectedStock, setSelectedStock] = useState<StockTicker | null>(null);
-  const [tradeAmount, setTradeAmount] = useState<number>(1);
+  const [tradeAmount, setTradeAmount] = useState<number>(0);
   const [tradeMode, setTradeMode] = useState<'STOCK' | 'OPTION'>('STOCK');
   const [selectedOptionData, setSelectedOptionData] = useState<any>(null);
   const [holdingsView, setHoldingsView] = useState<'daily' | 'total'>('daily');
@@ -44,6 +52,7 @@ export const Robbinghood: React.FC = () => {
     getNetWorth, netWorthHistory, optionsHoldings,
     costBasis, tradeHistory, day, currentDay, sharkDebt,
     intradayBars, marketTime, marketIsOpen, netWorthBars,
+    scheduledEvents,
   } = useGameStore();
 
   const bigGainTicker = useGameStore((s) => s.bigGainTicker);
@@ -51,7 +60,7 @@ export const Robbinghood: React.FC = () => {
 
   // Reset trade amount when selection changes
   React.useEffect(() => {
-    setTradeAmount(1);
+    setTradeAmount(0);
   }, [selectedStock, selectedOptionData]);
 
   const netWorth = getNetWorth();
@@ -235,16 +244,15 @@ export const Robbinghood: React.FC = () => {
                 const tRemaining = Math.max(0.0001, dteRemaining / 252);
                 const currentPremium = calculateOptionPrice(stock.currentPrice, opt.strikePrice, opt.type, scaledIV(stock.iv, dteRemaining), tRemaining);
                 const currentValue = opt.amount * currentPremium;
-                const prevStockPrice = stock.history.length > 1 ? stock.history[stock.history.length - 2].price : stock.currentPrice;
+                const prevStockPrice = stock.history.length > 0 ? stock.history[stock.history.length - 1].price : stock.currentPrice;
                 const dtePrev = dteRemaining + 1;
                 const prevPremium = calculateOptionPrice(prevStockPrice, opt.strikePrice, opt.type, scaledIV(stock.iv, dtePrev), Math.max(0.0001, dtePrev / 252));
-                const boughtAmountToday = tradeHistory.filter(t => t.day === day && t.ticker === opt.ticker && t.type === 'OPTION_BUY').reduce((s, t) => s + t.amount, 0);
-                const relevantAmount = Math.max(0, opt.amount - boughtAmountToday);
-                const dailyPL = relevantAmount === 0 ? 0 : (currentPremium - prevPremium) * relevantAmount;
-                const dailyPct = relevantAmount === 0 ? 0 : calculatePercentChange(currentPremium, prevPremium);
-                // Total change
                 const totalPL = currentValue - opt.premiumPaid;
                 const totalPct = calculatePercentChange(currentValue, opt.premiumPaid);
+                const boughtAmountToday = tradeHistory.filter(t => t.day === day && t.ticker === opt.ticker && t.type === 'OPTION_BUY').reduce((s, t) => s + t.amount, 0);
+                const relevantAmount = Math.max(0, opt.amount - boughtAmountToday);
+                const dailyPL = relevantAmount === 0 ? totalPL : (currentPremium - prevPremium) * relevantAmount;
+                const dailyPct = relevantAmount === 0 ? totalPct : calculatePercentChange(currentPremium, prevPremium);
                 const optChangeVal = holdingsView === 'daily' ? dailyPL : totalPL;
                 const optChangePct = holdingsView === 'daily' ? dailyPct : totalPct;
                 const color = optChangeVal === 0 ? '#e0dbcb' : optChangeVal > 0 ? '#94ba8b' : '#ba8b8b';
@@ -302,7 +310,7 @@ export const Robbinghood: React.FC = () => {
                  {(() => {
                    if (!selectedStock) return null;
                    const hist = stocks[selectedStock].history;
-                   const prevPrice = hist.length > 1 ? hist[hist.length - 2].price : stocks[selectedStock].currentPrice;
+                   const prevPrice = hist.length > 0 ? hist[hist.length - 1].price : stocks[selectedStock].currentPrice;
                    const chartColor = stocks[selectedStock].currentPrice >= prevPrice ? '#94ba8b' : '#ba8b8b';
                    const changePct = calculatePercentChange(stocks[selectedStock].currentPrice, prevPrice);
                    return (
@@ -327,11 +335,16 @@ export const Robbinghood: React.FC = () => {
                          </div>
                          {EARNINGS_DAYS[selectedStock] && (
                            <div className="earnings-countdown" style={{ fontSize: '10px', opacity: 0.6, marginTop: '2px' }}>
-                             {EARNINGS_DAYS[selectedStock]! > currentDay
-                               ? `${EARNINGS_DAYS[selectedStock]! - currentDay} days until earnings`
-                               : EARNINGS_DAYS[selectedStock] === currentDay
-                                 ? 'Earnings today'
-                                 : 'Earnings passed'}
+                             {(() => {
+                               const earningsDay = EARNINGS_DAYS[selectedStock]!;
+                               if (earningsDay > currentDay) {
+                                 const diff = earningsDay - currentDay;
+                                 return `${diff} day${diff !== 1 ? 's' : ''} until earnings`;
+                               }
+                               if (earningsDay < currentDay) return 'Earnings passed';
+                               const evt = scheduledEvents.find(e => e.type === 'EARNINGS' && e.ticker === selectedStock && e.day === currentDay);
+                               return evt ? `Earnings today at ${fmtTime(evt.triggerTime)}` : 'Earnings today';
+                             })()}
                            </div>
                          )}
                        </div>
@@ -390,13 +403,13 @@ export const Robbinghood: React.FC = () => {
                          const curVal = o.amount * curPremium;
                          const totalPL = curVal - o.premiumPaid;
                          const totalPLPct = calculatePercentChange(curVal, o.premiumPaid);
-                         const prevStockPrice = hist.length > 1 ? hist[hist.length - 2].price : stocks[selectedStock].currentPrice;
+                         const prevStockPrice = hist.length > 0 ? hist[hist.length - 1].price : stocks[selectedStock].currentPrice;
                          const dtePrev = dte + 1;
                          const prevPremium = calculateOptionPrice(prevStockPrice, o.strikePrice, o.type, scaledIV(stocks[selectedStock].iv, dtePrev), Math.max(0.0001, dtePrev / 252));
                          const boughtOptToday = tradeHistory.filter(t => t.day === day && t.ticker === o.ticker && t.type === 'OPTION_BUY').reduce((s, t) => s + t.amount, 0);
                          const optAtStart = Math.max(0, o.amount - boughtOptToday);
-                         const optDailyPL = optAtStart <= 0 ? 0 : (curPremium - prevPremium) * optAtStart;
-                         const optDailyPct = optAtStart <= 0 ? 0 : calculatePercentChange(curPremium, prevPremium);
+                         const optDailyPL = optAtStart <= 0 ? totalPL : (curPremium - prevPremium) * optAtStart;
+                         const optDailyPct = optAtStart <= 0 ? totalPLPct : calculatePercentChange(curPremium, prevPremium);
                          const optChangeVal = holdingsView === 'daily' ? optDailyPL : totalPL;
                          const optChangePct = holdingsView === 'daily' ? optDailyPct : totalPLPct;
                          const optColor = optChangeVal === 0 ? '#e0dbcb' : optChangeVal > 0 ? '#94ba8b' : '#ba8b8b';
@@ -440,13 +453,13 @@ export const Robbinghood: React.FC = () => {
                       <div className="toggle-group" style={{ marginBottom: '12px' }}>
                         <button 
                           className={`toggle-btn ${tradeMode === 'STOCK' ? 'active' : ''}`}
-                          onClick={() => { setTradeMode('STOCK'); setTradeAmount(1); setSelectedOptionData(null); }}
+                          onClick={() => { setTradeMode('STOCK'); setTradeAmount(0); setSelectedOptionData(null); }}
                         >
                           STOCK
                         </button>
                         <button 
                           className={`toggle-btn ${tradeMode === 'OPTION' ? 'active' : ''}`}
-                          onClick={() => { setTradeMode('OPTION'); setTradeAmount(1); }}
+                          onClick={() => { setTradeMode('OPTION'); setTradeAmount(0); }}
                         >
                           OPTION
                         </button>
@@ -471,9 +484,9 @@ export const Robbinghood: React.FC = () => {
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         <input 
                           type="number" 
-                          min="1" 
-                          value={tradeAmount} 
-                          onChange={(e) => setTradeAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                          min="0"
+                          value={tradeAmount}
+                          onChange={(e) => setTradeAmount(Math.max(0, parseInt(e.target.value) || 0))}
                           style={{
                             backgroundColor: '#2b2b26',
                             color: '#e0dbcb',
@@ -517,21 +530,21 @@ export const Robbinghood: React.FC = () => {
                     <div className="swipe-actions" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {tradeMode === 'STOCK' ? (
                         <>
-                          <SwipeConfirm label={`SWIPE TO BUY ${tradeAmount} SHARES`} onConfirm={handleBuy} />
-                          <SwipeConfirm label={`SWIPE TO SELL ${tradeAmount} SHARES`} onConfirm={handleSell} />
+                          <SwipeConfirm label={`SWIPE TO BUY ${tradeAmount} SHARES`} onConfirm={handleBuy} disabled={tradeAmount === 0} />
+                          <SwipeConfirm label={`SWIPE TO SELL ${tradeAmount} SHARES`} onConfirm={handleSell} disabled={tradeAmount === 0} />
                         </>
                       ) : (
                         <>
-                          <SwipeConfirm 
-                            label={selectedOptionData ? `SWIPE TO BUY ${tradeAmount} ${selectedOptionData.type}S` : 'SELECT AN OPTION'} 
-                            onConfirm={handleBuy} 
-                            disabled={!selectedOptionData}
+                          <SwipeConfirm
+                            label={selectedOptionData ? `SWIPE TO BUY ${tradeAmount} ${selectedOptionData.type}S` : 'SELECT AN OPTION'}
+                            onConfirm={handleBuy}
+                            disabled={!selectedOptionData || tradeAmount === 0}
                           />
                           {heldOptionAmount > 0 && (
-                            <SwipeConfirm 
-                              label={`SWIPE TO SELL ${tradeAmount} ${selectedOptionData?.type}S`} 
-                              onConfirm={handleSell} 
-                              disabled={!selectedOptionData || heldOptionAmount < tradeAmount}
+                            <SwipeConfirm
+                              label={`SWIPE TO SELL ${tradeAmount} ${selectedOptionData?.type}S`}
+                              onConfirm={handleSell}
+                              disabled={!selectedOptionData || tradeAmount === 0 || heldOptionAmount < tradeAmount}
                             />
                           )}
                         </>

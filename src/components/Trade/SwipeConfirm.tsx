@@ -67,7 +67,7 @@ export const SwipeConfirm: React.FC<SwipeConfirmProps> = ({
       </motion.span>
 
       <motion.div
-        drag="x"
+        drag={disabled ? false : "x"}
         dragConstraints={{ left: 0, right: width - 40 }}
         dragElastic={0}
         dragMomentum={false}

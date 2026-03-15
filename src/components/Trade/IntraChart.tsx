@@ -108,7 +108,19 @@ export const IntraChart: React.FC<IntraChartProps> = ({
   const yMax = rawMax + range * 0.05;
   const yRange = yMax - yMin;
 
+  // For intraday timeframes in TODAY mode, pin x to clock time so candles
+  // fill the full 9:30am–4:00pm window rather than only the bars seen so far.
+  const MARKET_OPEN = 570;
+  const MARKET_CLOSE = 960;
+  const isIntraday = timeframe !== '1D' && sessionOnly;
+
+  const xAtTime = (openTime: number): number => {
+    const t = Math.max(MARKET_OPEN, Math.min(MARKET_CLOSE, openTime));
+    return PAD_LEFT + ((t - MARKET_OPEN) / (MARKET_CLOSE - MARKET_OPEN)) * chartW;
+  };
+
   const xAt = (i: number, total: number): number => {
+    if (isIntraday && sourceBars[i]) return xAtTime(sourceBars[i].openTime);
     if (total <= 1) return PAD_LEFT + chartW / 2;
     return PAD_LEFT + (i / (total - 1)) * chartW;
   };

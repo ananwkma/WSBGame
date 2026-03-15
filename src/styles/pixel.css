@@ -114,9 +114,6 @@ body {
 }
 
 .next-turn-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
   background: #a89f8c;
   border: 2px solid #2b2b26;
   padding: 4px 12px;

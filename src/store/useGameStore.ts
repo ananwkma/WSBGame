@@ -1,10 +1,94 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { GameStore, StockTicker, GameEvent, EndingType, StockData, CandleBar } from './types';
+import type { GameStore, StockTicker, GameEvent, EndingType, StockData, CandleBar, MarketEvent } from './types';
 import { generateHistoricalData, calculateBS, scaledIV } from '../utils/marketUtils';
 import { getRandomTemplate, getRandomPrediction, pickSharkMessage } from '../data/messageTemplates';
 import type { PerformanceTier } from '../data/messageTemplates';
 import { playMarketOpen, playMarketClose, playBigGain, playBigLoss, playBorrow } from '../utils/soundEngine';
+
+// Fixed earnings schedule (ticker → day)
+const EARNINGS_SCHEDULE: Partial<Record<StockTicker, number>> = {
+  '$GAME': 3, '$APE': 4, '$POPC': 5, '$APPO': 6, '$GOOGO': 7, '$BERG': 8,
+};
+
+// Seed scheduled events for a given game day
+function seedDayEvents(day: number): MarketEvent[] {
+  const events: MarketEvent[] = [];
+  let idSeq = 0;
+  const id = () => `evt-d${day}-${idSeq++}`;
+
+  // Earnings (fixed schedule)
+  (Object.entries(EARNINGS_SCHEDULE) as [StockTicker, number][]).forEach(([ticker, earningsDay]) => {
+    if (earningsDay === day) {
+      const triggerTime = 600 + Math.floor(Math.random() * 300); // random between 10am–4pm range (600–900)
+      const beat = Math.random() > 0.45; // 55% chance of beat
+      events.push({
+        id: id(),
+        type: 'EARNINGS',
+        ticker,
+        day,
+        triggerTime,
+        priceMultiplier: beat ? 1.15 + Math.random() * 0.25 : 0.72 + Math.random() * 0.18,
+        rampMinutes: 2,
+        fired: false,
+        narrativeKey: beat ? 'EARNINGS_BEAT' : 'EARNINGS_MISS',
+      });
+    }
+  });
+
+  // Random events — each run independently at low probability for days 2–9
+  if (day >= 2 && day <= 9) {
+    // Fed announcement (once per game, roughly day 4–7)
+    if (day >= 4 && day <= 7 && Math.random() < 0.3) {
+      events.push({
+        id: id(),
+        type: 'FED_ANNOUNCEMENT',
+        ticker: null,
+        day,
+        triggerTime: 840 + Math.floor(Math.random() * 60), // 2–3pm
+        priceMultiplier: Math.random() > 0.5 ? 1.08 : 0.93,
+        rampMinutes: 2,
+        fired: false,
+        narrativeKey: 'FED_ANNOUNCEMENT',
+      });
+    }
+    // Meme frenzy (random day)
+    if (Math.random() < 0.25) {
+      const tickers: StockTicker[] = ['$GAME', '$APE', '$POPC', '$APPO', '$GOOGO', '$BERG'];
+      const ticker = tickers[Math.floor(Math.random() * tickers.length)];
+      events.push({
+        id: id(),
+        type: 'MEME_FRENZY',
+        ticker,
+        day,
+        triggerTime: 600 + Math.floor(Math.random() * 300),
+        priceMultiplier: Math.random() > 0.4 ? 1.2 + Math.random() * 0.3 : 0.75 + Math.random() * 0.15,
+        rampMinutes: 1,
+        fired: false,
+        narrativeKey: 'MEME_FRENZY',
+      });
+    }
+    // Insider leak
+    if (Math.random() < 0.2) {
+      const tickers: StockTicker[] = ['$GAME', '$APE', '$POPC', '$APPO', '$GOOGO', '$BERG'];
+      const ticker = tickers[Math.floor(Math.random() * tickers.length)];
+      events.push({
+        id: id(),
+        type: 'INSIDER_LEAK',
+        ticker,
+        day,
+        triggerTime: 570 + Math.floor(Math.random() * 200),
+        priceMultiplier: Math.random() > 0.35 ? 1.12 : 0.88,
+        rampMinutes: 1,
+        fake: Math.random() < 0.4, // 40% are fake leaks
+        fired: false,
+        narrativeKey: 'INSIDER_LEAK',
+      });
+    }
+  }
+
+  return events;
+}
 
 const INITIAL_EVENTS: GameEvent[] = [
   {
@@ -250,7 +334,7 @@ const getInitialState = () => {
     bigLossTicker: null as string | null,
     intradayBars: {},        // empty map — keyed by ticker symbol
     netWorthBars: [],
-    scheduledEvents: [],
+    scheduledEvents: seedDayEvents(1),
     activeEvents: [],
     pendingMessages: [],
     threads: initialThreads,
@@ -504,6 +588,7 @@ export const useGameStore = create<GameStore>()(
       tickMarket: () => {
         const state = get();
         if (state.gameStatus !== 'playing') return;
+        if (state.marketTime >= 1439) return; // freeze at 11:59 PM, wait for NEXT DAY
 
         const newTime = state.marketTime + 1;
         const newIsOpen = newTime >= 570 && newTime < 960; // 9:30am–4pm
@@ -571,6 +656,10 @@ export const useGameStore = create<GameStore>()(
         }
 
         // Check for pending event triggers
+        if (import.meta.env.DEV && newIsOpen && newTime % 30 === 0) {
+          const pending = state.scheduledEvents.filter(e => !e.fired && e.day === state.currentDay);
+          if (pending.length > 0) console.log('[PENDING EVENTS]', `marketTime=${newTime}`, pending.map(e => `${e.type} ${e.ticker ?? 'ALL'} @${e.triggerTime}`));
+        }
         const newScheduledEvents = state.scheduledEvents.map((evt) => {
           if (!evt.fired && evt.day === state.currentDay && evt.triggerTime <= newTime) {
             return { ...evt, fired: true };
@@ -583,6 +672,33 @@ export const useGameStore = create<GameStore>()(
         const newActiveEvents = newlyFired.length > 0
           ? [...state.activeEvents, ...newlyFired]
           : state.activeEvents;
+
+        // Apply event effects when they fire
+        if (newlyFired.length > 0) {
+          console.log('[EVENT FIRED]', newlyFired.map(e => `${e.type} ${e.ticker ?? 'ALL'} day=${e.day} triggerTime=${e.triggerTime} multiplier=${e.priceMultiplier}`));
+
+          newlyFired.forEach((evt) => {
+            if (evt.fake) return; // fake insider leaks do nothing to price
+            const tickers: StockTicker[] = evt.ticker
+              ? [evt.ticker as StockTicker]
+              : (Object.keys(newStocks) as StockTicker[]); // FED affects all
+            tickers.forEach((ticker) => {
+              const s = newStocks[ticker];
+              if (!s) return;
+              const shocked = Math.round(s.currentPrice * evt.priceMultiplier);
+              newStocks[ticker] = { ...s, currentPrice: Math.max(1, shocked) };
+              // Update intraday bar for shocked price
+              const bars = newIntradayBars[ticker] || [];
+              const lastBar = bars[bars.length - 1];
+              if (lastBar) {
+                newIntradayBars[ticker] = [
+                  ...bars.slice(0, -1),
+                  { ...lastBar, high: Math.max(lastBar.high, shocked), low: Math.min(lastBar.low, shocked), close: shocked },
+                ];
+              }
+            });
+          });
+        }
 
         // Deliver any pending mid-session messages
         const newPendingMessages = state.pendingMessages.map((pm) =>
@@ -1153,6 +1269,7 @@ export const useGameStore = create<GameStore>()(
           intradayBars: {},
           netWorthBars: [],
           activeEvents: [],
+          scheduledEvents: seedDayEvents(nextDayNum),
         }));
         
         triggerFlash('neutral');
@@ -1162,13 +1279,21 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'wsb-trader-save',
       storage: createJSONStorage(() => localStorage),
-      version: 1,
+      version: 2,
       migrate: (persistedState: any, version: number) => {
+        let state = persistedState as any;
         if (version === 0) {
-          const { hype, nextTurn, ...rest } = persistedState as any;
-          return rest;
+          const { hype, nextTurn, ...rest } = state;
+          state = rest;
         }
-        return persistedState as any;
+        if (version < 2) {
+          // Seed scheduledEvents for the current day if missing or empty
+          const day = state.currentDay ?? state.day ?? 1;
+          if (!state.scheduledEvents || state.scheduledEvents.length === 0) {
+            state = { ...state, scheduledEvents: seedDayEvents(day) };
+          }
+        }
+        return state;
       },
       partialize: (state) => {
         const { lastFlash, popups, intradayBars, netWorthBars,
