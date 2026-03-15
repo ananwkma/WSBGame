@@ -4,12 +4,16 @@ import { Robbinghood } from '../Trade/Robbinghood';
 import { GuruTube } from './GuruTube';
 import { ReaditTab } from './ReaditTab';
 import { NewsPanel } from './NewsPanel';
+import { useGameStore } from '../../store/useGameStore';
 import './LaptopBrowser.css';
 
 type LaptopTab = 'ROBBINGHOOD' | 'GURUTUBE' | 'READIT';
 
 export const LaptopBrowser: React.FC = () => {
   const [activeTab, setActiveTab] = useState<LaptopTab>('ROBBINGHOOD');
+  const activeEvents = useGameStore((s) => s.activeEvents);
+  const dismissEvent = useGameStore((s) => s.dismissEvent);
+  const newsCount = activeEvents.filter((e) => e.type !== 'INSIDER_LEAK').length;
 
   const addressUrl =
     activeTab === 'ROBBINGHOOD'
@@ -54,6 +58,36 @@ export const LaptopBrowser: React.FC = () => {
           <span>↻</span>
         </div>
         <div className="address-input">{addressUrl}</div>
+        {newsCount > 0 && (
+          <div style={{
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            paddingRight: '6px',
+            fontSize: '9px',
+            fontFamily: 'monospace',
+            color: '#ba8b8b',
+            letterSpacing: '1px',
+          }}>
+            <span style={{
+              display: 'inline-block',
+              width: '7px',
+              height: '7px',
+              borderRadius: '50%',
+              background: '#ba8b8b',
+              animation: 'news-badge-pulse 1.2s ease-in-out infinite',
+            }} />
+            NEWS
+            <span style={{
+              background: '#ba8b8b',
+              color: '#1a1a16',
+              borderRadius: '2px',
+              padding: '0 3px',
+              fontWeight: 'bold',
+            }}>{newsCount}</span>
+          </div>
+        )}
       </div>
 
       {/* News panel — slides in above content when events fire */}
