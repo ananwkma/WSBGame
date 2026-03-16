@@ -5,6 +5,7 @@
 - [x] **Plan 02 — UI Branding & Cleanup**: Phone renamed uPhone/uMessage/readit; HYPE LEVEL bar removed; DualViewShell hype jitter eliminated; laptop readit tab added with u/DegenTrader WSB onboarding post and 6 troll tutorial replies.
 - [x] **Plan 03 — IntraChart Component**: Multi-timeframe SVG chart with OHLC candles, crosshair, groupBars utility, IntraChart wired in Robbinghood for stock and portfolio views, earnings countdown.
 - [x] **Plan 05 — Sound & Polish**: Chiptune sound engine (market bells, big gain/loss, borrow sound); pixel coin/flame particle bursts on 20%+ tick moves; EndingScreen framer-motion entrance animation.
+- [ ] **Plan 06 — Final Verification** (CHECKPOINT: awaiting human browser verification): TypeScript clean build confirmed (tsc --noEmit exits 0); NewsPanel scrolling ticker; IntraChart OHLC tooltip + x-axis labels; 7 gameplay checks pending.
 
 ## Key Decisions (Phase 15)
 - Removed useGameStore entirely from DualViewShell — static animate {x:0,y:0}
@@ -56,8 +57,8 @@
 - formatCurrency uses Math.abs internally; negative net worth sign handled at call site in Robbinghood.tsx to avoid breaking PerformanceIndicator.
 
 ## Current Focus
-- Phase 15 in progress. Plans 15-01, 15-02, 15-05 complete (2026-03-14).
-- Last session: Completed 15-05-PLAN.md (2026-03-14)
+- Phase 15 in progress. Plans 15-01 through 15-05 complete. Plan 15-06 at checkpoint.
+- Last session: Checkpoint 15-06 Task 2 human-verify (2026-03-16)
 
 ## Key Decisions
 - useMarketClock uses getState().tickMarket() (non-stale closure) for setInterval
