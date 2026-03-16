@@ -11,15 +11,21 @@ interface IntraChartProps {
   marketIsOpen: boolean;
   showCandleToggle?: boolean;         // default true; set false for net worth chart
   ticker: string;                     // used for display only
+  chartHeight?: number;               // override chart height in px
 }
 
-type Timeframe = '1M' | '30M' | '1H' | '1D';
+type Timeframe = '1M' | '10M' | '30M' | '1D';
 
-const CHART_HEIGHT = 160;
+const DEFAULT_CHART_HEIGHT = 160;
 const PAD_LEFT = 52;
 const PAD_RIGHT = 8;
 const PAD_TOP = 10;
-const PAD_BOTTOM = 22;
+const PAD_BOTTOM = 30;
+
+const LINE_TIMEFRAMES: Timeframe[] = ['1M', '30M', '1D'];
+const CANDLE_TIMEFRAMES: Timeframe[] = ['10M', '30M', '1D'];
+
+const INTERVAL_MAP: Record<Timeframe, number> = { '1M': 1, '10M': 10, '30M': 30, '1D': 390 };
 
 function formatTime(minutes: number): string {
   const h = Math.floor(minutes / 60);
@@ -27,6 +33,11 @@ function formatTime(minutes: number): string {
   const ampm = h >= 12 ? 'PM' : 'AM';
   const h12 = h % 12 === 0 ? 12 : h % 12;
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+function sanitizeTimeframe(tf: string | null, candle: boolean): Timeframe {
+  const valid = candle ? CANDLE_TIMEFRAMES : LINE_TIMEFRAMES;
+  return (valid as string[]).includes(tf ?? '') ? (tf as Timeframe) : valid[0];
 }
 
 export const IntraChart: React.FC<IntraChartProps> = ({
@@ -37,7 +48,9 @@ export const IntraChart: React.FC<IntraChartProps> = ({
   marketIsOpen,
   showCandleToggle = true,
   ticker,
+  chartHeight: chartHeightProp,
 }) => {
+  const CHART_HEIGHT = chartHeightProp ?? DEFAULT_CHART_HEIGHT;
   const containerRef = useRef<HTMLDivElement>(null);
   const [renderWidth, setRenderWidth] = useState(300);
 
@@ -52,10 +65,10 @@ export const IntraChart: React.FC<IntraChartProps> = ({
     return () => ro.disconnect();
   }, []);
 
-  const [timeframe, setTimeframe] = useState<Timeframe>(() => {
-    return (localStorage.getItem('chartTimeframe') as Timeframe) || '1M';
-  });
   const [showCandles, setShowCandles] = useState(false);
+  const [timeframe, setTimeframe] = useState<Timeframe>(() =>
+    sanitizeTimeframe(localStorage.getItem('chartTimeframe'), false)
+  );
   const [sessionOnly, setSessionOnly] = useState(true);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
@@ -64,34 +77,41 @@ export const IntraChart: React.FC<IntraChartProps> = ({
     localStorage.setItem('chartTimeframe', tf);
   };
 
+  const handleToggleCandles = () => {
+    const next = !showCandles;
+    setShowCandles(next);
+    if (next && timeframe === '1M') {
+      // 1M is not available in candle mode — bump to 10M
+      setTimeframe('10M');
+      localStorage.setItem('chartTimeframe', '10M');
+    }
+  };
+
   // Derive source bars
   let sourceBars: CandleBar[];
   if (timeframe === '1D' || !sessionOnly) {
-    // Build daily bars from dailyHistory (one candle per historical day)
     sourceBars = dailyHistory.map((pt) => ({
-      openTime: pt.turn * 960,  // approximate openTime from turn number
+      openTime: pt.turn * 960,
       open: pt.price,
       high: pt.price,
       low: pt.price,
       close: pt.price,
     }));
-    // For 1D + today: also append a summary bar from intradayBars if market is open today
-    if (intradayBars.length > 0) {
+    // Append today's partial bar — use netWorthBars for portfolio chart, intradayBars for stocks
+    const todaySource = (netWorthBars && netWorthBars.length > 0) ? netWorthBars : intradayBars;
+    if (todaySource.length > 0) {
       const todayBar: CandleBar = {
         openTime: 570,
-        open: intradayBars[0].open,
-        high: Math.max(...intradayBars.map(b => b.high)),
-        low: Math.min(...intradayBars.map(b => b.low)),
-        close: intradayBars[intradayBars.length - 1].close,
+        open: todaySource[0].open,
+        high: Math.max(...todaySource.map(b => b.high)),
+        low: Math.min(...todaySource.map(b => b.low)),
+        close: todaySource[todaySource.length - 1].close,
       };
       sourceBars = [...sourceBars, todayBar];
     }
   } else {
-    // Intraday: aggregate from 1-min bars
-    const intervalMap: Record<Timeframe, number> = { '1M': 1, '30M': 30, '1H': 60, '1D': 390 };
-    // For net worth chart use netWorthBars if provided
     const barsToUse = (netWorthBars && netWorthBars.length > 0) ? netWorthBars : intradayBars;
-    sourceBars = groupBars(barsToUse, intervalMap[timeframe]);
+    sourceBars = groupBars(barsToUse, INTERVAL_MAP[timeframe]);
   }
 
   // Y scale bounds
@@ -108,8 +128,6 @@ export const IntraChart: React.FC<IntraChartProps> = ({
   const yMax = rawMax + range * 0.05;
   const yRange = yMax - yMin;
 
-  // For intraday timeframes in TODAY mode, pin x to clock time so candles
-  // fill the full 9:30am–4:00pm window rather than only the bars seen so far.
   const MARKET_OPEN = 570;
   const MARKET_CLOSE = 960;
   const isIntraday = timeframe !== '1D' && sessionOnly;
@@ -130,7 +148,6 @@ export const IntraChart: React.FC<IntraChartProps> = ({
     return PAD_TOP + (1 - normalized) * chartH;
   };
 
-  // Build line path through close prices
   const lineGen = line<CandleBar>()
     .x((_, i) => xAt(i, sourceBars.length))
     .y((b) => yAt(b.close))
@@ -138,19 +155,39 @@ export const IntraChart: React.FC<IntraChartProps> = ({
 
   const linePath = sourceBars.length >= 2 ? (lineGen(sourceBars) || '') : '';
 
-  // Y-axis ticks (4 ticks)
   const yTicks = Array.from({ length: 4 }, (_, i) => {
     const val = yMin + (yRange * (i + 0.5)) / 4;
     return { y: yAt(val), label: formatCurrency(Math.round(val)) };
   });
 
-  // Crosshair handlers
+  // X-axis labels
+  const xAxisLabels: { x: number; label: string }[] = [];
+  const xLabelY = PAD_TOP + chartH + 16;
+  if (isIntraday) {
+    // Fixed time marks: 9:30, 11:00, 12:30, 2:00, 3:30, 4:00
+    [570, 660, 750, 840, 930, 960].forEach(t => {
+      const h = Math.floor(t / 60);
+      const m = t % 60;
+      const ampm = h >= 12 ? 'p' : 'a';
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      const label = m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2, '0')}`;
+      xAxisLabels.push({ x: xAtTime(t), label });
+    });
+  } else if (sourceBars.length > 0) {
+    // Day labels: D1, D2, … — thin out if many bars
+    const step = Math.max(1, Math.ceil(sourceBars.length / 8));
+    sourceBars.forEach((_, i) => {
+      if (i % step === 0 || i === sourceBars.length - 1) {
+        xAxisLabels.push({ x: xAt(i, sourceBars.length), label: `D${i + 1}` });
+      }
+    });
+  }
+
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     if (sourceBars.length === 0) return;
     const svgEl = e.currentTarget;
     const rect = svgEl.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
-    // Find nearest bar
     let bestIdx = 0;
     let bestDist = Infinity;
     sourceBars.forEach((_, i) => {
@@ -166,36 +203,45 @@ export const IntraChart: React.FC<IntraChartProps> = ({
   const showCandleMode = showCandleToggle !== false && showCandles;
   const marketClosed = !marketIsOpen && intradayBars.length === 0;
 
-  // Determine chart color (green if up, red if down)
   const chartColor = sourceBars.length < 2
     ? '#e0dbcb'
     : sourceBars[sourceBars.length - 1].close >= sourceBars[0].open
       ? '#94ba8b'
       : '#ba8b8b';
 
+  const activeTabs = showCandleMode ? CANDLE_TIMEFRAMES : LINE_TIMEFRAMES;
+
+  // Tooltip layout
+  const TOOLTIP_W = showCandleMode ? 112 : 112;
+  const TOOLTIP_H = showCandleMode ? 68 : 16;
+  const TOOLTIP_LINE_H = 12;
+
   return (
     <div style={{ width: '100%', fontFamily: 'monospace' }}>
       {/* Timeframe tabs + toggles row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: '2px' }}>
-          {(['1M', '30M', '1H', '1D'] as Timeframe[]).map(tf => (
-            <button
-              key={tf}
-              onClick={() => handleTimeframeChange(tf)}
-              style={{
-                fontSize: '10px',
-                padding: '2px 6px',
-                cursor: 'pointer',
-                fontFamily: 'monospace',
-                border: '1px solid #706b66',
-                background: timeframe === tf ? '#e0dbcb' : 'none',
-                color: timeframe === tf ? '#2b2b26' : '#706b66',
-                fontWeight: timeframe === tf ? 'bold' : 'normal',
-              }}
-            >
-              {tf}
-            </button>
-          ))}
+          {activeTabs.map(tf => {
+            if (!sessionOnly && tf !== '1D') return null;
+            return (
+              <button
+                key={tf}
+                onClick={() => handleTimeframeChange(tf)}
+                style={{
+                  fontSize: '10px',
+                  padding: '2px 6px',
+                  cursor: 'pointer',
+                  fontFamily: 'monospace',
+                  border: '1px solid #706b66',
+                  background: timeframe === tf ? '#e0dbcb' : 'none',
+                  color: timeframe === tf ? '#2b2b26' : '#706b66',
+                  fontWeight: timeframe === tf ? 'bold' : 'normal',
+                }}
+              >
+                {tf}
+              </button>
+            );
+          })}
         </div>
 
         <div style={{ display: 'flex', gap: '2px', marginLeft: '4px' }}>
@@ -223,7 +269,7 @@ export const IntraChart: React.FC<IntraChartProps> = ({
 
         {showCandleToggle !== false && (
           <button
-            onClick={() => setShowCandles(v => !v)}
+            onClick={handleToggleCandles}
             style={{
               fontSize: '10px',
               padding: '2px 6px',
@@ -274,6 +320,21 @@ export const IntraChart: React.FC<IntraChartProps> = ({
           <line x1={PAD_LEFT} y1={PAD_TOP} x2={PAD_LEFT} y2={PAD_TOP + chartH} stroke="#706b66" strokeWidth="1" />
           <line x1={PAD_LEFT} y1={PAD_TOP + chartH} x2={renderWidth - PAD_RIGHT} y2={PAD_TOP + chartH} stroke="#706b66" strokeWidth="1" />
 
+          {/* X-axis labels */}
+          {xAxisLabels.map(({ x, label }, i) => (
+            <text
+              key={`x-${i}`}
+              x={x}
+              y={xLabelY}
+              fontSize="9"
+              fill="#706b66"
+              fontFamily="monospace"
+              textAnchor="middle"
+            >
+              {label}
+            </text>
+          ))}
+
           {/* Candle or line rendering */}
           {showCandleMode ? (
             <>
@@ -287,13 +348,11 @@ export const IntraChart: React.FC<IntraChartProps> = ({
                 const barWidth = Math.max(2, Math.min(8, chartW / Math.max(sourceBars.length, 1) - 1));
                 return (
                   <g key={i}>
-                    {/* Wick */}
                     <line
                       x1={cx} y1={yAt(bar.high)}
                       x2={cx} y2={yAt(bar.low)}
                       stroke={barColor} strokeWidth="1"
                     />
-                    {/* Body */}
                     <rect
                       x={cx - barWidth / 2}
                       y={bodyTop}
@@ -314,14 +373,12 @@ export const IntraChart: React.FC<IntraChartProps> = ({
             />
           )}
 
-          {/* Crosshair */}
+          {/* Crosshair + tooltip */}
           {hoveredIndex !== null && sourceBars[hoveredIndex] && (() => {
             const bar = sourceBars[hoveredIndex];
             const cx = xAt(hoveredIndex, sourceBars.length);
-            const price = bar.close;
-            const timeLabel = formatTime(bar.openTime);
-            const tooltipText = `${formatCurrency(price)} @ ${timeLabel}`;
-            const tooltipX = cx + 6 > renderWidth - 120 ? cx - 6 - 110 : cx + 6;
+            const tooltipX = cx + 6 > renderWidth - TOOLTIP_W - 8 ? cx - 6 - TOOLTIP_W : cx + 6;
+            const tooltipY = PAD_TOP + 2;
             return (
               <g>
                 <line
@@ -330,16 +387,33 @@ export const IntraChart: React.FC<IntraChartProps> = ({
                   stroke="#e0dbcb" strokeWidth="1" strokeDasharray="3,2" opacity="0.6"
                 />
                 <rect
-                  x={tooltipX} y={PAD_TOP + 2}
-                  width={110} height={16}
+                  x={tooltipX} y={tooltipY}
+                  width={TOOLTIP_W} height={TOOLTIP_H}
                   fill="#2b2b26" stroke="#706b66" strokeWidth="1"
                 />
-                <text
-                  x={tooltipX + 4} y={PAD_TOP + 13}
-                  fontSize="10" fill="#e0dbcb" fontFamily="monospace"
-                >
-                  {tooltipText}
-                </text>
+                {showCandleMode ? (
+                  <>
+                    <text x={tooltipX + 4} y={tooltipY + TOOLTIP_LINE_H} fontSize="10" fill="#a89f8c" fontFamily="monospace">
+                      {formatTime(bar.openTime)}
+                    </text>
+                    <text x={tooltipX + 4} y={tooltipY + TOOLTIP_LINE_H * 2 + 2} fontSize="10" fill="#e0dbcb" fontFamily="monospace">
+                      O {formatCurrency(bar.open)}
+                    </text>
+                    <text x={tooltipX + 4} y={tooltipY + TOOLTIP_LINE_H * 3 + 4} fontSize="10" fill="#94ba8b" fontFamily="monospace">
+                      H {formatCurrency(bar.high)}
+                    </text>
+                    <text x={tooltipX + 4} y={tooltipY + TOOLTIP_LINE_H * 4 + 6} fontSize="10" fill="#ba8b8b" fontFamily="monospace">
+                      L {formatCurrency(bar.low)}
+                    </text>
+                    <text x={tooltipX + 4} y={tooltipY + TOOLTIP_LINE_H * 5 + 8} fontSize="10" fill="#e0dbcb" fontFamily="monospace">
+                      C {formatCurrency(bar.close)}
+                    </text>
+                  </>
+                ) : (
+                  <text x={tooltipX + 4} y={tooltipY + 13} fontSize="10" fill="#e0dbcb" fontFamily="monospace">
+                    {formatCurrency(bar.close)} @ {formatTime(bar.openTime)}
+                  </text>
+                )}
               </g>
             );
           })()}

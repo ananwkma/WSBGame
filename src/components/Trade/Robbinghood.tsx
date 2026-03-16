@@ -197,6 +197,7 @@ export const Robbinghood: React.FC = () => {
                 marketIsOpen={marketIsOpen}
                 ticker="NET WORTH"
                 showCandleToggle={false}
+                chartHeight={260}
               />
             </div>
             
@@ -441,6 +442,7 @@ export const Robbinghood: React.FC = () => {
                       marketIsOpen={marketIsOpen}
                       ticker={selectedStock}
                       showCandleToggle={true}
+                      chartHeight={260}
                     />
                   </div>
                   <ParticleBurst type="coin" active={bigGainTicker === selectedStock} />
