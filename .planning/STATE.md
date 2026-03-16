@@ -5,7 +5,7 @@
 - [x] **Plan 02 — UI Branding & Cleanup**: Phone renamed uPhone/uMessage/readit; HYPE LEVEL bar removed; DualViewShell hype jitter eliminated; laptop readit tab added with u/DegenTrader WSB onboarding post and 6 troll tutorial replies.
 - [x] **Plan 03 — IntraChart Component**: Multi-timeframe SVG chart with OHLC candles, crosshair, groupBars utility, IntraChart wired in Robbinghood for stock and portfolio views, earnings countdown.
 - [x] **Plan 05 — Sound & Polish**: Chiptune sound engine (market bells, big gain/loss, borrow sound); pixel coin/flame particle bursts on 20%+ tick moves; EndingScreen framer-motion entrance animation.
-- [ ] **Plan 06 — Final Verification** (CHECKPOINT: awaiting human browser verification): TypeScript clean build confirmed (tsc --noEmit exits 0); NewsPanel scrolling ticker; IntraChart OHLC tooltip + x-axis labels; 7 gameplay checks pending.
+- [x] **Plan 06 — Final Verification**: TypeScript clean build confirmed (tsc --noEmit exits 0); NewsPanel scrolling ticker; IntraChart OHLC tooltip + x-axis labels; all 7 human gameplay checks approved.
 
 ## Key Decisions (Phase 15)
 - Removed useGameStore entirely from DualViewShell — static animate {x:0,y:0}
@@ -56,9 +56,12 @@
 - SharkLoanPanel defined as non-exported inline component; SHARK DEBT placed after Buying Power in Portfolio; EndingScreen uses inline stat-row div for span-level color control.
 - formatCurrency uses Math.abs internally; negative net worth sign handled at call site in Robbinghood.tsx to avoid breaking PerformanceIndicator.
 
+## Completed Phases
+- [x] **Phase 15: Live Market Events Polish** — All 6 plans complete. Real-time market clock, intraday SVG chart, market events with NewsPanel, chiptune sounds, pixel particle bursts, EndingScreen animation, and branding polish (uPhone/uMessage/readit/NEXT DAY/no HYPE LEVEL) all confirmed in-browser.
+
 ## Current Focus
-- Phase 15 in progress. Plans 15-01 through 15-05 complete. Plan 15-06 at checkpoint.
-- Last session: Checkpoint 15-06 Task 2 human-verify (2026-03-16)
+- Phase 15 complete. All plans 15-01 through 15-06 verified.
+- Last session: Phase 15 Plan 06 final verification approved (2026-03-16)
 
 ## Key Decisions
 - useMarketClock uses getState().tickMarket() (non-stale closure) for setInterval

@@ -10,7 +10,7 @@ requires:
     provides: real-time market clock, IntraChart, sound engine, particle bursts, EndingScreen animation, branding changes (plans 01-05)
 provides:
   - TypeScript clean build verified (zero errors across all Phase 15 files)
-  - Human verification of full Phase 15 feature set (pending checkpoint)
+  - Human verification of full Phase 15 feature set (7/7 checks approved)
   - NewsPanel scrolling ticker bar with color-coded labels
   - IntraChart timeframe tabs updated to 1M/10M/30M/1D with OHLC tooltip
   - x-axis time labels for intraday and day labels for 1D view
@@ -48,33 +48,37 @@ requirements-completed:
   - UX-01
 
 # Metrics
-duration: 1min (automated); pending human verification
+duration: ~15min (automated + human verification)
 completed: 2026-03-16
 ---
 
 # Phase 15 Plan 06: Final Verification Summary
 
-**Zero TypeScript errors across all Phase 15 files; NewsPanel and IntraChart polished with scrolling ticker, OHLC tooltip, and improved timeframe tabs — awaiting human gameplay verification.**
+**Zero TypeScript errors across all Phase 15 files; all 7 human gameplay checks approved — real-time market clock, intraday chart, market events, sounds, particle bursts, EndingScreen animation, and branding confirmed working.**
 
 ## Performance
 
-- **Duration:** ~1 min (Task 1 automated); Task 2 awaiting human verification
+- **Duration:** ~15 min total (Task 1 automated, Task 2 human checkpoint)
 - **Started:** 2026-03-16T08:37:51Z
-- **Completed:** In progress (checkpoint:human-verify)
-- **Tasks:** 1/2 automated complete
+- **Completed:** 2026-03-16
+- **Tasks:** 2/2 complete
 - **Files modified:** 4
 
 ## Accomplishments
 - `npx tsc --noEmit` exits 0 — zero type errors across all Phase 15 files (Plans 01-05)
+- Human verified all 7 gameplay checks: branding, real-time clock, chart, NEXT DAY, market events, sounds, and game end animation
 - NewsPanel rebuilt as scrolling news ticker: 28px bar with color-coded badge (BREAKING/MACRO/MEME), scrolling headline text, dismiss button
 - IntraChart timeframe tabs updated to 1M/10M/30M/1D; candle mode uses 10M/30M/1D; auto-bumps 1M to 10M when switching to candles
 - IntraChart OHLC tooltip (O/H/L/C rows) in candle mode; single price+time tooltip in line mode
-- X-axis labels: time marks (9:30a–4:00p) in intraday view; D1/D2/… in 1D view
+- X-axis labels: time marks (9:30a-4:00p) in intraday view; D1/D2/... in 1D view
 - `chartHeight` prop added; portfolio and stock chart both set to 260px
 
 ## Task Commits
 
 1. **Task 1: TypeScript clean build verification** - `423c211` (feat)
+2. **Task 2: Human verification of full Phase 15 feature set** - checkpoint approved by human (no code changes)
+
+**Plan metadata:** `c6dca70` (docs: create SUMMARY, update STATE and ROADMAP — checkpoint)
 
 ## Files Created/Modified
 - `src/components/Laptop/NewsPanel.tsx` — Scrolling ticker bar with badge labels and color accent per event type
@@ -105,16 +109,19 @@ completed: 2026-03-16
 **Impact on plan:** No scope change — work was already written; commit hygiene fix only.
 
 ## Issues Encountered
-None - TypeScript build passed on first run with zero errors.
+None - TypeScript build passed on first run with zero errors. Human verification approved all 7 checks on first review.
 
 ## User Setup Required
 None - no external service configuration required.
 
 ## Next Phase Readiness
-- All Phase 15 automated tasks verified clean
-- Task 2 checkpoint awaiting human browser verification of 7 gameplay checks
-- After approval: Phase 15 fully complete; requirements TRADE-13, TRADE-14, EVT-01, UX-01 satisfied
+- Phase 15 fully complete. All 6 plans (01-06) verified.
+- Requirements TRADE-13, TRADE-14, EVT-01, UX-01 satisfied.
+- Real-time market simulation, intraday charting, market events, sound engine, particle effects, branding polish all confirmed in-browser.
+- Game is ready for next phase of development.
+
+## Self-Check: PASSED
 
 ---
 *Phase: 15-live-market-events-polish*
-*Completed: 2026-03-16 (pending checkpoint approval)*
+*Completed: 2026-03-16*
