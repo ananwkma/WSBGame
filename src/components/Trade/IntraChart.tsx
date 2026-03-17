@@ -6,6 +6,7 @@ import { groupBars, formatCurrency } from '../../utils/marketUtils';
 interface IntraChartProps {
   intradayBars: CandleBar[];          // 1-min bars for current day (from store.intradayBars[ticker])
   previousDayBars?: CandleBar[];      // yesterday's 1-min bars for pre-population
+  allDayBars?: CandleBar[];           // one OHLC bar per completed day for ALL tab (sliding 10-day window)
   dailyHistory: HistoryPoint[];       // existing daily HistoryPoint[] from stock.history
   netWorthBars?: CandleBar[];         // only provided for portfolio net worth chart
   marketTime: number;
@@ -34,6 +35,11 @@ const WINDOW_SIZE: Record<Timeframe, number> = {
   '1M': 60, '5M': 78, '10M': 39, '1H': 16, '4H': 10, '1D': 10,
 };
 
+// ALL tab uses day-based window sizes (how many daily bars to show per timeframe)
+const ALL_WINDOW_SIZE: Record<Timeframe, number> = {
+  '1M': 60, '5M': 78, '10M': 39, '1H': 5, '4H': 8, '1D': 10,
+};
+
 function formatTime(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
@@ -53,6 +59,7 @@ const sanitizeTimeframe = (tf: string | null, isToday: boolean): Timeframe => {
 export const IntraChart: React.FC<IntraChartProps> = ({
   intradayBars,
   previousDayBars = [],
+  allDayBars = [],
   dailyHistory,
   netWorthBars,
   marketTime,
@@ -115,27 +122,43 @@ export const IntraChart: React.FC<IntraChartProps> = ({
   let sourceBars: CandleBar[];
 
   if (!sessionOnly) {
-    // ALL tab
-    if (timeframe === '1D') {
-      // Daily history approach (existing behavior — unchanged)
-      sourceBars = dailyHistory.map((pt) => ({
-        openTime: pt.turn * 960,
-        open: pt.price, high: pt.price, low: pt.price, close: pt.price,
-      }));
+    // ALL tab — use accumulated daily bars (one bar per completed day)
+    if (allDayBars.length > 0) {
+      // Append today's live bar as the trailing bar
       const todaySource = (netWorthBars && netWorthBars.length > 0) ? netWorthBars : intradayBars;
       if (todaySource.length > 0) {
-        sourceBars = [...sourceBars, {
-          openTime: 570,
+        const todayBar: CandleBar = {
+          openTime: allDayBars.length + 1,
           open: todaySource[0].open,
           high: Math.max(...todaySource.map(b => b.high)),
           low: Math.min(...todaySource.map(b => b.low)),
           close: todaySource[todaySource.length - 1].close,
-        }];
+        };
+        sourceBars = [...allDayBars, todayBar];
+      } else {
+        sourceBars = allDayBars;
       }
     } else {
-      // 1H / 4H: combine yesterday + today bars and group
-      const combined = [...previousDayBars, ...intradayBars];
-      sourceBars = groupBars(combined, INTERVAL_MAP[timeframe]);
+      // Fallback for saves without allDayBars: use dailyHistory for 1D, prev+today for others
+      if (timeframe === '1D') {
+        sourceBars = dailyHistory.map((pt) => ({
+          openTime: pt.turn * 960,
+          open: pt.price, high: pt.price, low: pt.price, close: pt.price,
+        }));
+        const todaySource = (netWorthBars && netWorthBars.length > 0) ? netWorthBars : intradayBars;
+        if (todaySource.length > 0) {
+          sourceBars = [...sourceBars, {
+            openTime: 570,
+            open: todaySource[0].open,
+            high: Math.max(...todaySource.map(b => b.high)),
+            low: Math.min(...todaySource.map(b => b.low)),
+            close: todaySource[todaySource.length - 1].close,
+          }];
+        }
+      } else {
+        const combined = [...previousDayBars, ...intradayBars];
+        sourceBars = groupBars(combined, INTERVAL_MAP[timeframe]);
+      }
     }
   } else {
     // TODAY tab — pre-populate with previous day bars then apply window
@@ -144,8 +167,8 @@ export const IntraChart: React.FC<IntraChartProps> = ({
     sourceBars = groupBars(combined, INTERVAL_MAP[timeframe]);
   }
 
-  // Apply sliding window — always take the last N bars
-  const windowSize = WINDOW_SIZE[timeframe];
+  // Apply sliding window — take the last N bars
+  const windowSize = sessionOnly ? WINDOW_SIZE[timeframe] : ALL_WINDOW_SIZE[timeframe];
   sourceBars = sourceBars.slice(-windowSize);
 
   // Y scale bounds
@@ -209,7 +232,7 @@ export const IntraChart: React.FC<IntraChartProps> = ({
         const h12 = h % 12 === 0 ? 12 : h % 12;
         const label = sessionOnly
           ? (m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2,'0')}`)
-          : `D${Math.floor(bar.openTime / 960) + 1}`;
+          : `D${bar.openTime}`;
         xAxisLabels.push({ x: xAt(i, sourceBars.length), label });
       }
     });

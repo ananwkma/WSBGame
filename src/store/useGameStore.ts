@@ -76,6 +76,36 @@ const SHARK_TAUNT_MESSAGES = [
   'Rough day out there. Debt compounds smooth though. Night night.',
 ];
 
+// Generate 9 fake pre-game daily OHLC bars for each ticker to pre-populate the ALL chart
+function generateFakeHistoricalDayBars(): Record<string, CandleBar[]> {
+  const result: Record<string, CandleBar[]> = {};
+  (Object.keys(INITIAL_STOCKS) as StockTicker[]).forEach(ticker => {
+    const config = INITIAL_STOCKS[ticker];
+    const vol = config.histVol;
+    // Walk backwards from starting price to get 9 fake day opens (oldest first)
+    const dayOpens: number[] = [];
+    let p = config.price;
+    for (let i = 0; i < 9; i++) {
+      const change = 1 + (Math.random() * vol * 2 - vol);
+      p = Math.max(100, Math.round(p / change));
+      dayOpens.unshift(p);
+    }
+    // Build one OHLC bar per fake day with a mini random walk for high/low
+    result[ticker] = dayOpens.map((dayOpen, i) => {
+      let price = dayOpen;
+      let high = price, low = price;
+      for (let m = 0; m < 20; m++) {
+        const c = 1 + (Math.random() * vol * 0.15 - vol * 0.075);
+        price = Math.max(100, Math.round(price * c));
+        high = Math.max(high, price);
+        low = Math.min(low, price);
+      }
+      return { openTime: i + 1, open: dayOpen, high, low, close: price };
+    });
+  });
+  return result;
+}
+
 // Seed scheduled events for a given game day
 function seedDayEvents(day: number): MarketEvent[] {
   const events: MarketEvent[] = [];
@@ -400,6 +430,7 @@ const getInitialState = () => {
     netWorthTriggerFiredToday: false,
     intradayBars: {},        // empty map — keyed by ticker symbol
     previousDayBars: {},     // empty until first advanceDay — keyed by ticker symbol
+    allDayBars: generateFakeHistoricalDayBars(),  // pre-populated with 9 fake pre-game days
     netWorthBars: [],
     scheduledEvents: seedDayEvents(1),
     activeEvents: [],
@@ -1461,6 +1492,27 @@ export const useGameStore = create<GameStore>()(
             day: nextDayNum,
             wasCorrect: wasGuruCorrect
           },
+          // Append today's OHLC summary to allDayBars (one bar per completed day)
+          allDayBars: (() => {
+            const updated: Record<string, CandleBar[]> = {};
+            (Object.keys(INITIAL_STOCKS) as StockTicker[]).forEach(t => {
+              const prev = state.allDayBars?.[t] || [];
+              const bars = state.intradayBars[t] || [];
+              if (bars.length > 0) {
+                const daily: CandleBar = {
+                  openTime: prev.length + 1,
+                  open: bars[0].open,
+                  high: Math.max(...bars.map(b => b.high)),
+                  low: Math.min(...bars.map(b => b.low)),
+                  close: bars[bars.length - 1].close,
+                };
+                updated[t] = [...prev, daily];
+              } else {
+                updated[t] = prev;
+              }
+            });
+            return updated;
+          })(),
           // Reset intraday market state for the new day
           marketTime: 480,       // 8:00am — pre-market window before 9:30am open
           marketIsOpen: false,   // market starts closed; useMarketClock opens it
@@ -1480,7 +1532,7 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'wsb-trader-save',
       storage: createJSONStorage(() => localStorage),
-      version: 3,
+      version: 4,
       migrate: (persistedState: any, version: number) => {
         let state = persistedState as any;
         if (version === 0) {
@@ -1496,6 +1548,9 @@ export const useGameStore = create<GameStore>()(
         }
         if (version < 3) {
           state = { ...state, previousDayBars: {} };
+        }
+        if (version < 4) {
+          state = { ...state, allDayBars: {} };
         }
         return state;
       },

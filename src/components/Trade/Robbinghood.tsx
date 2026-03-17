@@ -52,7 +52,7 @@ export const Robbinghood: React.FC = () => {
     getNetWorth, netWorthHistory, optionsHoldings,
     costBasis, tradeHistory, day, currentDay, sharkDebt,
     intradayBars, marketTime, marketIsOpen, netWorthBars,
-    scheduledEvents, previousDayBars,
+    scheduledEvents, previousDayBars, allDayBars,
   } = useGameStore();
 
   const bigGainTicker = useGameStore((s) => s.bigGainTicker);
@@ -438,6 +438,7 @@ export const Robbinghood: React.FC = () => {
                     <IntraChart
                       intradayBars={intradayBars[selectedStock] || []}
                       previousDayBars={previousDayBars[selectedStock] || []}
+                      allDayBars={allDayBars[selectedStock] || []}
                       dailyHistory={stocks[selectedStock].history}
                       marketTime={marketTime}
                       marketIsOpen={marketIsOpen}
