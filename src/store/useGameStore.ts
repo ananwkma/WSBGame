@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GameStore, StockTicker, GameEvent, EndingType, StockData, CandleBar, MarketEvent, ScheduledMessage } from './types';
 import { generateHistoricalData, calculateBS, scaledIV } from '../utils/marketUtils';
-import { getRandomTemplate, getRandomPrediction, pickSharkMessage } from '../data/messageTemplates';
-import type { PerformanceTier } from '../data/messageTemplates';
+import { getRandomTemplate, pickSharkMessage, getGuruVideoMessage } from '../data/messageTemplates';
+import type { PerformanceTier, GuruSentimentDir } from '../data/messageTemplates';
 import { playMarketOpen, playMarketClose, playBigGain, playBigLoss, playBorrow, playMessageDing } from '../utils/soundEngine';
 
 // Fixed earnings schedule (ticker → day)
@@ -1310,8 +1310,12 @@ export const useGameStore = create<GameStore>()(
         const guruCommentary = getRandomTemplate('GURU', guruTier);
 
         const predictionTicker = getRandomTicker();
-        const sentiment = Math.random() > 0.5 ? 'BULLISH' : 'BEARISH';
-        const predictionText = getRandomPrediction(sentiment, predictionTicker);
+        const prevTPrice = stocks[predictionTicker].currentPrice;
+        const nextTPrice = nextStocks[predictionTicker].currentPrice;
+        const priceMovePercent = prevTPrice > 0 ? (nextTPrice - prevTPrice) / prevTPrice : 0;
+        const guruDirection: GuruSentimentDir = priceMovePercent >= 0.05 ? 'UP' : priceMovePercent <= -0.05 ? 'DOWN' : 'FLAT';
+        const sentiment: 'BULLISH' | 'BEARISH' = guruDirection === 'DOWN' ? 'BEARISH' : 'BULLISH';
+        const predictionText = getGuruVideoMessage(predictionTicker, guruDirection);
 
         const guruMessage = { 
           id: `guru-${nextTurnNum}`, 
