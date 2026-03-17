@@ -1150,3 +1150,155 @@ export function pickSharkMessage(debtRatio: number, debtCents: number): string {
   }
   return base;
 }
+
+export type GuruSentimentDir = 'DOWN' | 'FLAT' | 'UP';
+
+export const GURU_VIDEO_MESSAGES: Record<string, { DOWN: string[]; FLAT: string[]; UP: string[] }> = {
+  '$GAME': {
+    DOWN: [
+      "GAMEGO in full meltdown mode. I called this months ago. Diamond hands are now dust hands.",
+      "GAMEGO down bad and the retail bagholders are coping hard. This is what happens when you ignore the chart.",
+      "GAMEGO breaking every support level like they owe it money. I told you to hedge. You didn't listen.",
+      "The GAMEGO thesis is dead. Management is gaslighting shareholders and the price knows it.",
+      "GAMEGO chart looks like my ex's mood swings — unpredictable, violent, and ultimately disappointing.",
+    ],
+    FLAT: [
+      "GAMEGO chopping sideways. The algos are bored. So am I. Volume says nobody wants to commit.",
+      "GAMEGO in consolidation purgatory. Could break either way. Flip a coin and pray.",
+      "Flat day for GAMEGO. The market is digesting. Just sit on your hands and don't do anything stupid.",
+      "GAMEGO going absolutely nowhere. This is what a stock looks like when bulls and bears are both wrong.",
+      "GAMEGO crabbing. Perfect time to sell covered calls if you're into that kind of thing. Which you're not.",
+    ],
+    UP: [
+      "GAMEGO breaking out and I told you to buy the dip weeks ago. Where were you? Too scared? Classic.",
+      "GAMEGO ripping. This is the move. Don't chase, but if you're already in — hold those bags with dignity.",
+      "Momentum is back in GAMEGO. Shorts are getting squeezed and it is beautiful to watch.",
+      "GAMEGO up big and the bears are silent. As they should be. The chart was obvious.",
+      "GAMEGO going parabolic. I take full credit. You're welcome. Clip this video.",
+    ],
+  },
+  '$APE': {
+    DOWN: [
+      "APE LABS is imploding. The tokenomics were always a red flag. I said this in my premium Discord.",
+      "APE getting slaughtered today. The institutional money has left the building. Retail is holding the bag.",
+      "APE chart is giving me flashbacks to every meme coin collapse I've ever documented. This is that.",
+      "APE down ugly. The community is in denial but the price chart doesn't lie. It never does.",
+      "APE going to zero? Not financial advice. But look at that volume on the red candles and tell me I'm wrong.",
+    ],
+    FLAT: [
+      "APE LABS going nowhere today. The hype cycle is paused. This is the boring part before it gets interesting.",
+      "APE flatlined. Even the apes aren't aping in today. Something's off in the sentiment.",
+      "APE consolidating. Could be accumulation, could be distribution. Nobody knows, least of all me.",
+      "APE moving sideways like a crab. Crabs are fine until they're not. Stay alert.",
+      "Flat APE is dangerous APE. Low volume consolidations resolve violently. Just saying.",
+    ],
+    UP: [
+      "APE LABS ripping today and my inbox is full of people who didn't buy when I told them to.",
+      "APE going ape. Fitting. Volume is good, momentum is good, vibes are good. Don't overthink it.",
+      "APE pumping hard. The community is coordinating. This is what happens when degens unite.",
+      "APE breaking above key resistance. New highs incoming if this holds. I'm watching closely.",
+      "APE up massive and I am enjoying every second of the bears getting bodied on this one.",
+    ],
+  },
+  '$POPC': {
+    DOWN: [
+      "POPCORNFLIX burning down. Streaming wars have a new casualty and it's your portfolio.",
+      "POPC getting destroyed today. Subscriber growth is decelerating and Wall Street is not forgiving.",
+      "POPC in freefall. The content pipeline is weak and the market knows it. Red bags incoming.",
+      "POPCORNFLIX down bad. They spent two billion on original content and nobody watched any of it.",
+      "POPC chart is a horror film. Unfortunately there's no skip-intro button for your losses.",
+    ],
+    FLAT: [
+      "POPCORNFLIX drifting sideways. Earnings are next week and nobody wants to take a position before then.",
+      "POPC flatline. Streaming subscribers flat. Stock flat. Everything about this company is just flat.",
+      "POPC basing here. Either they figure out profitability or this becomes a takeout candidate. Watch.",
+      "POPCORNFLIX doing absolutely nothing today. Maybe that's the story — no news, no moves.",
+      "POPC choppy and directionless. Like their content strategy honestly.",
+    ],
+    UP: [
+      "POPCORNFLIX popping today and yes, I made that pun on purpose. Short squeeze adding fuel.",
+      "POPC up big. Subscriber numbers leaked early? Institutional accumulation? Something is going on.",
+      "POPCORNFLIX ripping. The content play is working and the market is finally pricing it in.",
+      "POPC breaking out of its base. This setup was textbook. You had three weeks to buy. Hopefully you did.",
+      "POPC going vertical. Whatever news drops tonight, the smart money already knows it. Follow the chart.",
+    ],
+  },
+  '$GOOGO': {
+    DOWN: [
+      "GOOGO search revenue is declining and their AI bet is going nowhere. The moat is cracking.",
+      "GOOGO down today and it deserves it. Ad rates compressing, competition rising, multiple contracting.",
+      "GOOGO selling off. The ad market is weak and they're too dependent on a single revenue stream.",
+      "GOOGO chart looking like a company that peaked in 2021 and just doesn't know it yet.",
+      "GOOGO dropping. Regulatory risk, AI disruption, falling margins. Pick your poison.",
+    ],
+    FLAT: [
+      "GOOGO flat. They're too big to move fast anymore. The glory days of thirty percent growth are over.",
+      "GOOGO drifting. Not bad, not good. Just big and slow and reliable, like a search engine for boomers.",
+      "GOOGO in wait-and-see mode ahead of their quarterly earnings. Nobody's making a bet either way.",
+      "GOOGO sideways. The market is bored with big tech. Until it isn't. Be ready for that.",
+      "GOOGO doing nothing because nothing is happening. Sometimes that's the trade.",
+    ],
+    UP: [
+      "GOOGO ripping today. Ad market showing signs of life and the AI narrative is getting re-priced.",
+      "GOOGO up big. Buyback announcement? Beat-and-raise quarter? Their machine just prints money.",
+      "GOOGO breaking out. The bears were wrong again. They're always wrong on GOOGO long-term.",
+      "GOOGO pumping and the multiple is expanding. This is what a flight-to-quality rally looks like.",
+      "GOOGO going. When the big dogs run, the whole market follows. This is a good sign.",
+    ],
+  },
+  '$APPO': {
+    DOWN: [
+      "APPO selling off. iPhone supercycle is over and the services growth story is getting long in the tooth.",
+      "APPO down today. China sales weak, margins compressing, supply chain issues resurfacing. Not great.",
+      "APPO chart rolling over. When this stock breaks down, it tends to break hard. Watch the 200-day.",
+      "APPO declining. The innovation pipeline is dry and everyone pretends not to notice. The price noticed.",
+      "APPO getting hit. Regulatory pressure in the EU, China risk, and a PE ratio that doesn't forgive misses.",
+    ],
+    FLAT: [
+      "APPO flat. Even the most loved stock in America needs to breathe sometimes.",
+      "APPO doing nothing today. Consolidating after last week's move. This is healthy, probably.",
+      "APPO sideways. Everyone owns it. Nobody's selling. Nobody's buying. Just existing.",
+      "APPO basing here. Waiting for the next product cycle narrative to kick in.",
+      "APPO drifting. The stock trades on vibes as much as fundamentals at this point. Vibes are neutral.",
+    ],
+    UP: [
+      "APPO ripping higher. Services revenue beat massively and the market is repricing the whole ecosystem.",
+      "APPO going. New product announcement incoming? The insiders know. The chart knows. Do you?",
+      "APPO breaking out to new highs. Never short APPO. I have said this for years. I will say it again.",
+      "APPO flying today. Buyback machine is relentless. They will buy the stock until it's the only asset left.",
+      "APPO up massive and the shorts are getting destroyed. As they should be.",
+    ],
+  },
+  '$BERG': {
+    DOWN: [
+      "ICEBERG CAPITAL getting liquidated. Leverage on leverage on leverage. This is how it always ends.",
+      "BERG collapsing. The prime broker margin calls are going out as we speak. Get out of the way.",
+      "ICEBERG CAPITAL down hard. Their positions are too concentrated and the unwind is not pretty.",
+      "BERG in crisis mode. Funds like this don't come back after a drawdown like this. History says so.",
+      "BERG chart is a disaster. I don't know who's still long this name but I hope you like pain.",
+    ],
+    FLAT: [
+      "BERG drifting. Hedge funds don't telegraph their moves. This calm could be the eye of a storm.",
+      "ICEBERG CAPITAL going sideways. The name alone should tell you something about hidden risk.",
+      "BERG flatlined. Waiting for a catalyst. In leveraged financials, catalysts tend to be negative.",
+      "BERG doing nothing visible. Doesn't mean nothing is happening. Watch the options flow.",
+      "ICEBERG CAPITAL flat on the surface. Like an iceberg. Get it? I'll see myself out.",
+    ],
+    UP: [
+      "BERG ripping today. When leveraged financials run, they run hard. Don't stand in front of this.",
+      "ICEBERG CAPITAL up big. Somebody knows something. Position sizing on this matters enormously.",
+      "BERG going parabolic. High beta names like this are rocket fuel in a bull run. Ride carefully.",
+      "BERG breaking out. Risk-on trade is back and the leveraged plays are leading. Watch your stops.",
+      "ICEBERG CAPITAL flying. The most dangerous stocks make the most money. This is one of those days.",
+    ],
+  },
+};
+
+export function getGuruVideoMessage(ticker: string, direction: GuruSentimentDir): string {
+  const pool = GURU_VIDEO_MESSAGES[ticker];
+  if (!pool) {
+    return getRandomPrediction(direction === 'UP' ? 'BULLISH' : 'BEARISH', ticker);
+  }
+  const messages = pool[direction];
+  return messages[Math.floor(Math.random() * messages.length)];
+}
