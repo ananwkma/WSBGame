@@ -76,8 +76,8 @@
 - getRandomPrediction removed from useGameStore import after replacement; fallback still exists inside getGuruVideoMessage in messageTemplates.ts
 
 ## Current Focus
-- Phase 17 Plan 02 complete (d462032, cba216d). Plan 03 is next.
-- Last session: Phase 17 Plan 02 complete (2026-03-17)
+- Phase 17 Plan 03 complete (3472342, c975104). Phase 17 IntraChart overhaul done.
+- Last session: Phase 17 Plan 03 complete (2026-03-17)
 
 ## Key Decisions (Phase 17)
 - previousDayBars NOT in partialize exclusion list — persists through page reload for chart pre-population on refresh
@@ -86,6 +86,8 @@
 - pointerEvents: auto required on lock overlay — DualViewShell .screenContent sets pointer-events:none on unfocused panel
 - Lock snapshot taken in focus-transition effect so pre-lock messages don't trigger notifications
 - Single setTimeout in lockNotifs effect dismisses all expired items in one pass using arrivedAt > cutoff filter
+- isIntraday=false hardcoded in IntraChart for uniform xAt() spacing — pre-populated bars from yesterday fall outside 570-960 time axis causing clamp gaps if xAtTime is used
+- handleToggleCandles timeframe bump removed — both LINE and CANDLE now share same tab-specific timeframe set (TODAY: 1M/10M/30M; ALL: 1H/4H/1D)
 
 ## Key Decisions
 - useMarketClock uses getState().tickMarket() (non-stale closure) for setInterval
