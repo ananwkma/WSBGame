@@ -13,6 +13,7 @@
 - [x] **Phase 10: Social Expansion & GuruTube Overhaul** - Dynamic GuruTube UI (charts, marquees, emotions) and high-volume narrative templates.
 - [x] **Phase 11: Granular Narrative & Debt Foundation** - 14-tier narrative brackets, 800+ message templates, and groundwork for loans/debt.
 - [x] **Phase 12: Multiple Endings Expansion** - 10 distinct endings with WSB-ironic copy, pixel art sprites, and behavior-based detection cascade.
+- [ ] **Phase 16: QoL Polish** - Market-hour gating, intraday message scheduling, GuruTube content expansion, readit text fix.
 
 ## Phase Details
 
@@ -80,6 +81,22 @@
 - [ ] 15-05-PLAN.md — Polish: soundEngine chiptune, ParticleBurst coin/flame, EndingScreen entrance animation
 - [ ] 15-06-PLAN.md — Verification: tsc clean build + human gameplay loop verification (7 checks)
 
+### Phase 16: QoL Polish
+**Goal**: Fix market-hour gating (disable NEXT DAY and all trading while market is open), deliver intraday message scheduling (random timing + net-worth spike triggers replacing start-of-day delivery), expand GuruTube video messages to 90 total (15 per ticker × 6 tickers, 5 each for down/flat/up cases), and fix readit forum text visibility.
+**Depends on**: Phase 15
+**Requirements**: UX-02
+**Success Criteria**:
+  1. NEXT DAY button is disabled and visually grayed out while the market is open; it enables only after market close (marketTime ≥ 960).
+  2. Trading (buy/sell stocks and options) is blocked after market close; UI shows a clear disabled state.
+  3. Text messages from wife, friend, and other characters arrive at random points during the trading day or fire immediately on significant net-worth changes (≥10% swing), not only at day start.
+  4. GuruTube video pool has ≥15 unique messages per ticker per sentiment (down/flat/up), totalling ≥90 messages across all 6 tickers.
+  5. Readit laptop forum text is legible (white or high-contrast color, not black-on-dark).
+**Plans**: 3 plans
+**Plan list**:
+- [ ] 16-01-PLAN.md — UI gates: NEXT DAY disabled while market open, all SwipeConfirm trading blocked after close, ReaditTab text color fix
+- [ ] 16-02-PLAN.md — Intraday messaging: advanceDay schedules messages via pendingMessages queue with random deliverAt, net-worth swing trigger in tickMarket
+- [ ] 16-03-PLAN.md — GuruTube content: GURU_VIDEO_MESSAGES (90 strings keyed by ticker and direction), getGuruVideoMessage helper, advanceDay call site update
+
 ## Progress Table
 
 
@@ -98,5 +115,5 @@
 | 11: Granular Narrative | 3/3 | Completed | 2026-03-08 |
 | 12: Multiple Endings | 3/3 | Completed | 2026-03-09 |
 | 14: Shark Loans | 3/3 | Completed | 2026-03-14 |
-| 15: Live Market & Polish | 1/6 | In Progress | — |
-
+| 15: Live Market & Polish | 6/6 | Completed | 2026-03-16 |
+| 16: QoL Polish | 0/3 | In Progress | — |
