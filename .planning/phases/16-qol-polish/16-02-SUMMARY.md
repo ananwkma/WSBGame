@@ -92,6 +92,14 @@ None - no external service configuration required.
 - tickMarket delivery infrastructure handles both correctly (deliverAt <= newTime)
 - Ready for Phase 16 Plan 03 or further QoL polish
 
+## Self-Check: PASSED
+- FOUND: src/store/types.ts
+- FOUND: src/store/useGameStore.ts
+- FOUND: .planning/phases/16-qol-polish/16-02-SUMMARY.md
+- FOUND commit d11f76f (Task 1)
+- FOUND commit 40bf64c (Task 2)
+- FOUND commit d49adcf (docs/metadata)
+
 ---
 *Phase: 16-qol-polish*
 *Completed: 2026-03-17*
