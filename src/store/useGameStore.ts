@@ -1464,6 +1464,7 @@ export const useGameStore = create<GameStore>()(
           // Reset intraday market state for the new day
           marketTime: 480,       // 8:00am — pre-market window before 9:30am open
           marketIsOpen: false,   // market starts closed; useMarketClock opens it
+          previousDayBars: state.intradayBars,  // capture current day's 1-min bars before reset
           intradayBars: {},
           netWorthBars: [],
           activeEvents: [],
@@ -1479,7 +1480,7 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'wsb-trader-save',
       storage: createJSONStorage(() => localStorage),
-      version: 2,
+      version: 3,
       migrate: (persistedState: any, version: number) => {
         let state = persistedState as any;
         if (version === 0) {
@@ -1492,6 +1493,9 @@ export const useGameStore = create<GameStore>()(
           if (!state.scheduledEvents || state.scheduledEvents.length === 0) {
             state = { ...state, scheduledEvents: seedDayEvents(day) };
           }
+        }
+        if (version < 3) {
+          state = { ...state, previousDayBars: {} };
         }
         return state;
       },
