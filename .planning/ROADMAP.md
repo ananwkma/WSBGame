@@ -14,6 +14,7 @@
 - [x] **Phase 11: Granular Narrative & Debt Foundation** - 14-tier narrative brackets, 800+ message templates, and groundwork for loans/debt.
 - [x] **Phase 12: Multiple Endings Expansion** - 10 distinct endings with WSB-ironic copy, pixel art sprites, and behavior-based detection cascade.
 - [x] **Phase 16: QoL Polish** - Market-hour gating, intraday message scheduling, GuruTube content expansion, readit text fix. (completed 2026-03-17)
+- [ ] **Phase 17: Phone Lock Screen & Chart Overhaul** - uPhone lock screen with message previews when laptop focused; chart timeframe redesign (TODAY: 1m/10m/30m, ALL: 1h/4h/1d) with sliding window starting from previous day data.
 
 ## Phase Details
 
@@ -96,6 +97,24 @@
 - [ ] 16-01-PLAN.md — UI gates: NEXT DAY disabled while market open, all SwipeConfirm trading blocked after close, ReaditTab text color fix
 - [x] 16-02-PLAN.md — Intraday messaging: advanceDay schedules messages via pendingMessages queue with random deliverAt, net-worth swing trigger in tickMarket
 - [ ] 16-03-PLAN.md — GuruTube content: GURU_VIDEO_MESSAGES (90 strings keyed by ticker and direction), getGuruVideoMessage helper, advanceDay call site update
+
+### Phase 17: Phone Lock Screen & Chart Overhaul
+**Goal**: Add a uPhone lock screen (black screen when laptop is focused, unlocks on click, shows message preview notifications when locked) and overhaul the IntraChart timeframe system (TODAY tab: 1m/10m/30m for line and candle; ALL tab: 1h/4h/1d for line and candle; fixed-width sliding window that starts each morning with the previous day visible and advances left as new bars arrive).
+**Depends on**: Phase 16
+**Requirements**: UX-03
+**Success Criteria**:
+  1. Phone displays a black lock screen when laptop is in focus; clicking it switches focus to the phone and shows the full UI.
+  2. When a message arrives while the phone is locked, a notification preview (sender + truncated text) appears on the lock screen for a few seconds then fades.
+  3. TODAY tab shows 1m, 10m, and 30m timeframes for both line and candle modes.
+  4. ALL tab shows 1h, 4h, and 1d timeframes for both line and candle modes.
+  5. Chart renders a fixed number of bars visible at once, populating from the right; new bars push older ones to the left (sliding window).
+  6. When a new trading day begins, the chart opens pre-populated with the previous day's data on the left side of the window.
+**Plans**: 4 plans
+Plan list:
+- [ ] 17-01-PLAN.md — Store: previousDayBars field, advanceDay snapshot, persist v3
+- [ ] 17-02-PLAN.md — Phone lock screen overlay with notification previews + App.tsx wiring
+- [ ] 17-03-PLAN.md — IntraChart overhaul: TODAY/ALL tabs, sliding window, previousDayBars pre-population
+- [ ] 17-04-PLAN.md — Verification: tsc clean build + 7 human gameplay checks
 
 ## Progress Table
 
