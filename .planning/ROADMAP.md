@@ -13,7 +13,7 @@
 - [x] **Phase 10: Social Expansion & GuruTube Overhaul** - Dynamic GuruTube UI (charts, marquees, emotions) and high-volume narrative templates.
 - [x] **Phase 11: Granular Narrative & Debt Foundation** - 14-tier narrative brackets, 800+ message templates, and groundwork for loans/debt.
 - [x] **Phase 12: Multiple Endings Expansion** - 10 distinct endings with WSB-ironic copy, pixel art sprites, and behavior-based detection cascade.
-- [ ] **Phase 16: QoL Polish** - Market-hour gating, intraday message scheduling, GuruTube content expansion, readit text fix.
+- [x] **Phase 16: QoL Polish** - Market-hour gating, intraday message scheduling, GuruTube content expansion, readit text fix. (completed 2026-03-17)
 
 ## Phase Details
 

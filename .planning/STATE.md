@@ -62,6 +62,7 @@
 ## Phase 16: QoL Polish (In Progress)
 - [x] **Plan 01 — Market Gating & Readit Text**: NEXT DAY gated (marketTime<960), all 4 SwipeConfirm trading gates added (!marketIsOpen), ReaditTab text color fixed. All 6 human-verify checks passed.
 - [x] **Plan 02 — Intraday Message Scheduling**: Wife and extra-contact messages now delivered mid-session via ScheduledMessage queue with random deliverAt 570-959 instead of all at day start. Net-worth swing trigger (10%+ from day open) fires one immediate wife message via tickMarket, once per day.
+- [x] **Plan 03 — GuruTube Ticker-Specific Messages**: GURU_VIDEO_MESSAGES added with 90 strings (6 tickers x 3 directions x 5 each, referencing company names). advanceDay now derives guruDirection from price delta (±5% threshold) and calls getGuruVideoMessage. wasGuruCorrect tracking unchanged.
 
 ## Key Decisions (Phase 16)
 - marketTime < 960 used for NEXT DAY gate (not !marketIsOpen, which also fires during pre-market 360-569, wrongly blocking button at game start)
@@ -71,10 +72,12 @@
 - Extra-contact thread entries still created at advanceDay time (empty shell) so tickMarket delivery can find the thread
 - Swing trigger uses state.netWorthBars[0].open as dayOpenNW; gated by netWorthBars.length > 0 and dayOpenNW > 0 to avoid division by zero
 - Swing message deliverAt: newTime (immediate delivery on next tickMarket pass)
+- 5% price move threshold (±0.05) used to classify guru direction as UP/FLAT/DOWN in advanceDay
+- getRandomPrediction removed from useGameStore import after replacement; fallback still exists inside getGuruVideoMessage in messageTemplates.ts
 
 ## Current Focus
-- Phase 16 Plans 01 and 02 complete. Plan 01 (dc27ff3, 484206f) all 6 human checks approved. Plan 02 (d11f76f, 40bf64c) complete. Plan 03 is next.
-- Last session: Phase 16 Plan 01 human verification complete (2026-03-17)
+- Phase 16 Plans 01, 02, and 03 complete. Plan 03 (0004157, 9607b4a) done. Plan 04 is next.
+- Last session: Phase 16 Plan 03 complete (2026-03-17)
 
 ## Key Decisions
 - useMarketClock uses getState().tickMarket() (non-stale closure) for setInterval
