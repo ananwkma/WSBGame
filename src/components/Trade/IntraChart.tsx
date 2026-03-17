@@ -15,7 +15,7 @@ interface IntraChartProps {
   chartHeight?: number;               // override chart height in px
 }
 
-type Timeframe = '1M' | '10M' | '30M' | '1H' | '4H' | '1D';
+type Timeframe = '1M' | '5M' | '10M' | '1H' | '4H' | '1D';
 
 const DEFAULT_CHART_HEIGHT = 160;
 const PAD_LEFT = 52;
@@ -24,14 +24,14 @@ const PAD_TOP = 10;
 const PAD_BOTTOM = 30;
 
 const INTERVAL_MAP: Record<Timeframe, number> = {
-  '1M': 1, '10M': 10, '30M': 30, '1H': 60, '4H': 240, '1D': 390,
+  '1M': 1, '5M': 5, '10M': 10, '1H': 60, '4H': 240, '1D': 390,
 };
 
-const TODAY_TIMEFRAMES: Timeframe[] = ['1M', '10M', '30M'];
+const TODAY_TIMEFRAMES: Timeframe[] = ['1M', '5M', '10M'];
 const ALL_TIMEFRAMES: Timeframe[]   = ['1H', '4H', '1D'];
 
 const WINDOW_SIZE: Record<Timeframe, number> = {
-  '1M': 60, '10M': 39, '30M': 13, '1H': 16, '4H': 10, '1D': 10,
+  '1M': 60, '5M': 78, '10M': 39, '1H': 16, '4H': 10, '1D': 10,
 };
 
 function formatTime(minutes: number): string {
