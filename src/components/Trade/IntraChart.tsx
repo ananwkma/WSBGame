@@ -36,8 +36,9 @@ const WINDOW_SIZE: Record<Timeframe, number> = {
 };
 
 // ALL tab window sizes in bars (after grouping by timeframe)
+// 1H: 4 days × 7 hourly bars = 28 | 4H: 10 days × ~2 bars = 20 | 1D: 20 daily bars
 const ALL_WINDOW_SIZE: Record<Timeframe, number> = {
-  '1M': 60, '5M': 78, '10M': 39, '1H': 16, '4H': 10, '1D': 10,
+  '1M': 60, '5M': 78, '10M': 39, '1H': 28, '4H': 20, '1D': 20,
 };
 
 // Stride used to encode dayAbsoluteIndex in allDayBars openTime

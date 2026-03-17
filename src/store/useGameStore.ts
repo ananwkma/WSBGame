@@ -105,10 +105,10 @@ function generateFakeHistoricalDayBars(): Record<string, CandleBar[]> {
   (Object.keys(INITIAL_STOCKS) as StockTicker[]).forEach(ticker => {
     const config = INITIAL_STOCKS[ticker];
     const vol = config.histVol;
-    // Walk backwards from starting price to get 9 fake day opens (oldest first)
+    // Walk backwards from starting price to get 19 fake day opens (oldest first)
     const dayOpens: number[] = [];
     let p = config.price;
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 19; i++) {
       const change = 1 + (Math.random() * vol * 2 - vol);
       p = Math.max(100, Math.round(p / change));
       dayOpens.unshift(p);
@@ -116,7 +116,7 @@ function generateFakeHistoricalDayBars(): Record<string, CandleBar[]> {
     // Generate hourly bars for each fake day
     const allBars: CandleBar[] = [];
     let runningPrice = dayOpens[0];
-    for (let d = 0; d < 9; d++) {
+    for (let d = 0; d < 19; d++) {
       runningPrice = dayOpens[d];
       const dayBars = makeHourlyBars(runningPrice, vol, d + 1);
       allBars.push(...dayBars);
@@ -1516,7 +1516,7 @@ export const useGameStore = create<GameStore>()(
           // Append today's hourly bars to allDayBars (game day N = abs index N+9)
           allDayBars: (() => {
             const updated: Record<string, CandleBar[]> = {};
-            const dayAbsIdx = state.day + 9; // game day 1 → abs idx 10
+            const dayAbsIdx = state.day + 19; // game day 1 → abs idx 20
             (Object.keys(INITIAL_STOCKS) as StockTicker[]).forEach(t => {
               const prev = state.allDayBars?.[t] || [];
               const bars = state.intradayBars[t] || [];
