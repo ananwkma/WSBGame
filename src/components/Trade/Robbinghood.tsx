@@ -532,21 +532,21 @@ export const Robbinghood: React.FC = () => {
                     <div className="swipe-actions" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {tradeMode === 'STOCK' ? (
                         <>
-                          <SwipeConfirm label={`SWIPE TO BUY ${tradeAmount} SHARES`} onConfirm={handleBuy} disabled={tradeAmount === 0} />
-                          <SwipeConfirm label={`SWIPE TO SELL ${tradeAmount} SHARES`} onConfirm={handleSell} disabled={tradeAmount === 0} />
+                          <SwipeConfirm label={`SWIPE TO BUY ${tradeAmount} SHARES`} onConfirm={handleBuy} disabled={tradeAmount === 0 || !marketIsOpen} />
+                          <SwipeConfirm label={`SWIPE TO SELL ${tradeAmount} SHARES`} onConfirm={handleSell} disabled={tradeAmount === 0 || !marketIsOpen} />
                         </>
                       ) : (
                         <>
                           <SwipeConfirm
                             label={selectedOptionData ? `SWIPE TO BUY ${tradeAmount} ${selectedOptionData.type}S` : 'SELECT AN OPTION'}
                             onConfirm={handleBuy}
-                            disabled={!selectedOptionData || tradeAmount === 0}
+                            disabled={!selectedOptionData || tradeAmount === 0 || !marketIsOpen}
                           />
                           {heldOptionAmount > 0 && (
                             <SwipeConfirm
                               label={`SWIPE TO SELL ${tradeAmount} ${selectedOptionData?.type}S`}
                               onConfirm={handleSell}
-                              disabled={!selectedOptionData || tradeAmount === 0 || heldOptionAmount < tradeAmount}
+                              disabled={!selectedOptionData || tradeAmount === 0 || heldOptionAmount < tradeAmount || !marketIsOpen}
                             />
                           )}
                         </>
