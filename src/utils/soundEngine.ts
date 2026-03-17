@@ -58,3 +58,9 @@ export function playBigLoss(): void {
 export function playBorrow(): void {
   playTone(196, 0.30, 'sawtooth', 0.08); // G3 sawtooth — threatening
 }
+
+// Message notification: soft two-tone ding (sine wave, gentle)
+export function playMessageDing(): void {
+  playTone(1047, 0.08, 'sine', 0.07); // C6
+  setTimeout(() => playTone(1319, 0.18, 'sine', 0.06), 90); // E6
+}

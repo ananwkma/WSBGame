@@ -41,7 +41,7 @@ const SharkLoanPanel: React.FC = () => {
             key={amount}
             className="shark-borrow-btn pixel-bold"
             onClick={() => borrowFromShark(amount)}
-            disabled={isDisabled || sharkDebt + amount > netWorth}
+            disabled={isDisabled || sharkDebt + amount > netWorth + 10000000}
           >
             {PRESET_LABELS[i]}
           </button>

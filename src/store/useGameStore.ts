@@ -4,7 +4,7 @@ import type { GameStore, StockTicker, GameEvent, EndingType, StockData, CandleBa
 import { generateHistoricalData, calculateBS, scaledIV } from '../utils/marketUtils';
 import { getRandomTemplate, getRandomPrediction, pickSharkMessage } from '../data/messageTemplates';
 import type { PerformanceTier } from '../data/messageTemplates';
-import { playMarketOpen, playMarketClose, playBigGain, playBigLoss, playBorrow } from '../utils/soundEngine';
+import { playMarketOpen, playMarketClose, playBigGain, playBigLoss, playBorrow, playMessageDing } from '../utils/soundEngine';
 
 // Fixed earnings schedule (ticker → day)
 const EARNINGS_SCHEDULE: Partial<Record<StockTicker, number>> = {
@@ -856,6 +856,7 @@ export const useGameStore = create<GameStore>()(
         // Start from event-updated threads (includes any shark taunts added above)
         let newThreads = newThreadsFromEvents;
         if (dueMsgs.length > 0) {
+          playMessageDing();
           newThreads = { ...newThreadsFromEvents };
           dueMsgs.forEach(({ message }) => {
             const threadEntry = newThreads[message.sender];
@@ -991,7 +992,7 @@ export const useGameStore = create<GameStore>()(
         if (cash < sharkDebt) {
           // Can't afford full repayment — partial isn't offered, just block
           const rejectMsg = {
-            id: `shark-reject-${day}`,
+            id: `shark-reject-${day}-${Date.now()}`,
             sender: 'Loan Shark',
             text: `You're short. Come back when you got all of it. $${(sharkDebt / 100).toLocaleString()} — not a penny less.`,
             day,
@@ -1008,7 +1009,7 @@ export const useGameStore = create<GameStore>()(
           return;
         }
         const paidMsg = {
-          id: `shark-repay-${day}`,
+          id: `shark-repay-${day}-${Date.now()}`,
           sender: 'Loan Shark',
           text: `Smart move. Debt cleared. Don't come crawling back.`,
           day,
@@ -1029,10 +1030,10 @@ export const useGameStore = create<GameStore>()(
       borrowFromShark: (amount) => {
         const { cash, sharkDebt, threads, day } = get();
         const netWorth = get().getNetWorth();
-        if (sharkDebt + amount > netWorth) return;
+        if (sharkDebt + amount > netWorth + 10000000) return;
         playBorrow();
         const confirmMsg = {
-          id: `shark-borrow-${day}`,
+          id: `shark-borrow-${day}-${Date.now()}`,
           sender: 'Loan Shark',
           text: `Done. $${(amount / 100).toLocaleString()} wired. Don't be late.`,
           day,

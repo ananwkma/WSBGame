@@ -1,5 +1,6 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef } from 'react';
+import { motion, useAnimationControls } from 'framer-motion';
+import { useGameStore } from '../../store/useGameStore';
 import './Shell.css';
 
 export type FocusArea = 'laptop' | 'phone';
@@ -21,6 +22,22 @@ export const DualViewShell: React.FC<DualViewShellProps> = ({
   laptopContent,
   phoneContent
 }) => {
+  const controls = useAnimationControls();
+  const threads = useGameStore((state) => state.threads);
+
+  const totalMessages = Object.values(threads).reduce((sum, t) => sum + t.messages.length, 0);
+  const prevTotalRef = useRef(totalMessages);
+
+  useEffect(() => {
+    if (totalMessages > prevTotalRef.current) {
+      controls.start({
+        x: [0, -10, 10, -8, 8, -5, 5, -3, 3, 0],
+        transition: { duration: 0.5, ease: 'easeInOut' },
+      }).then(() => controls.set({ x: 0 }));
+    }
+    prevTotalRef.current = totalMessages;
+  }, [totalMessages, controls]);
+
   return (
     <div className={`dualViewShell ${focus === 'laptop' ? 'focusLaptop' : 'focusPhone'}`}>
       <div className="laptopView" onClick={() => setFocus('laptop')}>
@@ -32,7 +49,7 @@ export const DualViewShell: React.FC<DualViewShellProps> = ({
       <motion.div
         className="phoneView"
         onClick={() => setFocus('phone')}
-        animate={{ x: 0, y: 0 }}
+        animate={controls}
       >
         <div className="screenContent">
           {phoneContent || <div>[Phone Interface]</div>}
