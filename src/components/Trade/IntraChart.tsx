@@ -237,8 +237,9 @@ export const IntraChart: React.FC<IntraChartProps> = ({
         if (sessionOnly) {
           label = m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2,'0')}`;
         } else if (timeframe === '1D') {
-          // Show day index derived from absolute openTime
-          label = `D${Math.floor(bar.openTime / ALL_DAY_STRIDE)}`;
+          // Show game-relative day: abs idx 20 = game Day 1, pre-game days are negative
+          const gameDay = Math.floor(bar.openTime / ALL_DAY_STRIDE) - 19;
+          label = `D${gameDay}`;
         } else {
           // Show intraday hour for 1H/4H
           const intraMins = bar.openTime % ALL_DAY_STRIDE;
