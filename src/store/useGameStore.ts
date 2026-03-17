@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { GameStore, StockTicker, GameEvent, EndingType, StockData, CandleBar, MarketEvent } from './types';
+import type { GameStore, StockTicker, GameEvent, EndingType, StockData, CandleBar, MarketEvent, ScheduledMessage } from './types';
 import { generateHistoricalData, calculateBS, scaledIV } from '../utils/marketUtils';
 import { getRandomTemplate, getRandomPrediction, pickSharkMessage } from '../data/messageTemplates';
 import type { PerformanceTier } from '../data/messageTemplates';
@@ -882,6 +882,35 @@ export const useGameStore = create<GameStore>()(
           ];
         }
 
+        // Net-worth swing trigger: fire one immediate wife message on 10%+ move from day open
+        let netWorthTriggerFired = state.netWorthTriggerFiredToday;
+        let swingScheduled = [...newPendingMessages];
+
+        if (!state.netWorthTriggerFiredToday && newIsOpen) {
+          const dayOpenNW = state.netWorthBars.length > 0 ? state.netWorthBars[0].open : 0;
+          if (dayOpenNW > 0) {
+            const swingPct = Math.abs(currentNetWorth - dayOpenNW) / dayOpenNW;
+            if (swingPct >= 0.10) {
+              netWorthTriggerFired = true;
+              const swingTier: PerformanceTier = currentNetWorth > dayOpenNW ? 'POSITIVE' : 'NEGATIVE';
+              const swingText = getRandomTemplate('WIFE', swingTier, { netWorth: String(Math.round(currentNetWorth)) });
+              swingScheduled = [
+                ...swingScheduled,
+                {
+                  message: {
+                    id: `wife-swing-${newTime}`,
+                    sender: 'Wife',
+                    text: swingText,
+                    day: state.day,
+                  },
+                  deliverAt: newTime,
+                  delivered: false,
+                } as ScheduledMessage,
+              ];
+            }
+          }
+        }
+
         set({
           marketTime: newTime,
           marketIsOpen: newIsOpen,
@@ -890,11 +919,12 @@ export const useGameStore = create<GameStore>()(
           netWorthBars: newNetWorthBars,
           scheduledEvents: newScheduledEvents,
           activeEvents: newActiveEvents,
-          pendingMessages: newPendingMessages,
+          pendingMessages: swingScheduled,
           threads: newThreads,
           forumPosts: newForumPosts,
           bigGainTicker: bigGainSet,
           bigLossTicker: bigLossSet,
+          netWorthTriggerFiredToday: netWorthTriggerFired,
         });
       },
 
@@ -1293,7 +1323,10 @@ export const useGameStore = create<GameStore>()(
           newThreads['Crypto Guru'].messages = [guruMessage, ...newThreads['Crypto Guru'].messages];
         }
 
-        // WIFE SENTIMENT
+        // Scheduled messages — delivered mid-session via tickMarket instead of at day start
+        const newScheduledMessages: ScheduledMessage[] = [];
+
+        // WIFE SENTIMENT — scheduled for random market-hours time (9:30am–4pm = 570–959)
         // Pass absolute netWorth to support the 14-tier bracket system
         // The getRandomTemplate function will handle the range logic internally
         const wifeText = getRandomTemplate('WIFE', 'NEUTRAL', { netWorth: String(netWorth) });
@@ -1305,9 +1338,12 @@ export const useGameStore = create<GameStore>()(
           day: nextDayNum
         };
 
-        if (newThreads['Wife']) {
-          newThreads['Wife'].messages = [wifeMessage, ...newThreads['Wife'].messages];
-        }
+        const wifeDeliverAt = 570 + Math.floor(Math.random() * 390);
+        newScheduledMessages.push({
+          message: wifeMessage,
+          deliverAt: wifeDeliverAt,
+          delivered: false,
+        });
 
         // LOAN SHARK THREAT
         if (newDebt > 0) {
@@ -1345,7 +1381,8 @@ export const useGameStore = create<GameStore>()(
           const nwRatio = prevNetWorth > 0 ? netWorth / prevNetWorth : 1;
           const contactTier: PerformanceTier = nwRatio > 1.5 ? 'POSITIVE' : nwRatio < 0.5 ? 'NEGATIVE' : 'NEUTRAL';
           const text = getRandomTemplate(contact.category, contactTier, { ticker: getRandomTicker() });
-          
+
+          // Create thread entry so tickMarket delivery can find it, but don't push message now
           if (!newThreads[contact.name]) {
             newThreads[contact.name] = {
               contactName: contact.name,
@@ -1355,10 +1392,13 @@ export const useGameStore = create<GameStore>()(
             };
           }
 
-          newThreads[contact.name].messages = [
-            { id: `${contact.name.toLowerCase()}-${nextDayNum}`, sender: contact.name, text, day: nextDayNum },
-            ...newThreads[contact.name].messages,
-          ];
+          // Schedule message for random mid-session delivery (9:30am–4pm = 570–959)
+          const contactDeliverAt = 570 + Math.floor(Math.random() * 390);
+          newScheduledMessages.push({
+            message: { id: `contact-${contact.name}-${nextDayNum}`, sender: contact.name, text, day: nextDayNum },
+            deliverAt: contactDeliverAt,
+            delivered: false,
+          });
         });
 
         // FORUM
@@ -1423,7 +1463,7 @@ export const useGameStore = create<GameStore>()(
           activeEvents: [],
           scheduledEvents: seedDayEvents(nextDayNum),
           netWorthTriggerFiredToday: false,
-          pendingMessages: [],
+          pendingMessages: newScheduledMessages,
         }));
         
         triggerFlash('neutral');
