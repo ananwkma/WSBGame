@@ -105,7 +105,7 @@ function App() {
           focus={focus} 
           setFocus={setFocus}
           laptopContent={<LaptopBrowser />}
-          phoneContent={<PhoneApp />}
+          phoneContent={<PhoneApp focus={focus} setFocus={setFocus} />}
         />
       </GameViewport>
     </>
