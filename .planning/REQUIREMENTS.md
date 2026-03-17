@@ -48,6 +48,7 @@
 - **TRADE-14: Intraday Chart Timeframes:** Charts support multiple zoom levels showing OHLC-style data: 1-minute, 30-minute, 1-hour, and daily views. Daily chart shows full-session movement.
 - **EVT-01: Market Events:** Scheduled or probabilistic intraday events (earnings, Fed announcements, meme stock frenzies) cause significant price spikes/drops and narrative reactions.
 - **UX-01: UI & Animation Polish:** Key game moments (big gains, big losses, borrowing, endings) have micro-animations and/or audio cues consistent with the pixel art aesthetic.
+- **UX-02: QoL Polish:** Market-hour gating (NEXT DAY and trading disabled while market is open), intraday message scheduling (random timing + net-worth triggers), GuruTube content expanded to ≥15 messages per ticker per sentiment (≥90 total), readit forum text legible.
 
 ## Traceability
 
@@ -82,3 +83,5 @@
 | TRADE-10 | Phase 9 | Complete |
 | TRADE-11 | Phase 9 | Complete |
 | TRADE-12 | Phase 9 | Complete |
+
+| UX-02 | Phase 16 | Pending |
