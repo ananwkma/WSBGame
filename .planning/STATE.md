@@ -61,15 +61,20 @@
 
 ## Phase 16: QoL Polish (In Progress)
 - [~] **Plan 01 — Market Gating & Readit Text**: 2/3 tasks complete. NEXT DAY gated (marketTime<960), all 4 SwipeConfirm trading gates added (!marketIsOpen), ReaditTab text color fixed. Awaiting checkpoint: human-verify (Task 3).
+- [x] **Plan 02 — Intraday Message Scheduling**: Wife and extra-contact messages now delivered mid-session via ScheduledMessage queue with random deliverAt 570-959 instead of all at day start. Net-worth swing trigger (10%+ from day open) fires one immediate wife message via tickMarket, once per day.
 
 ## Key Decisions (Phase 16)
 - marketTime < 960 used for NEXT DAY gate (not !marketIsOpen, which also fires during pre-market 360-569, wrongly blocking button at game start)
 - Only SwipeConfirm execution gated; ALL IN/SELL ALL shortcuts and OptionsChain browsing left unaffected
 - color: '#e0dbcb' on ReaditTab outermost wrapper div fixes .forum-post black text cascade
+- Wife and extra-contact messages scheduled with random deliverAt 570-959 (market hours) so they appear mid-session rather than all at once on NEXT DAY
+- Extra-contact thread entries still created at advanceDay time (empty shell) so tickMarket delivery can find the thread
+- Swing trigger uses state.netWorthBars[0].open as dayOpenNW; gated by netWorthBars.length > 0 and dayOpenNW > 0 to avoid division by zero
+- Swing message deliverAt: newTime (immediate delivery on next tickMarket pass)
 
 ## Current Focus
-- Phase 16 Plan 01 at checkpoint. Tasks 1 & 2 committed (dc27ff3, 484206f). Awaiting human verification of 6 checks.
-- Last session: Phase 16 Plan 01 tasks 1-2 complete, checkpoint returned (2026-03-17)
+- Phase 16 Plan 02 complete (d11f76f, 40bf64c). Plan 01 still at checkpoint (Tasks 1 & 2 committed dc27ff3, 484206f), awaiting human verification.
+- Last session: Phase 16 Plan 02 complete (2026-03-17)
 
 ## Key Decisions
 - useMarketClock uses getState().tickMarket() (non-stale closure) for setInterval

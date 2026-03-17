@@ -94,7 +94,7 @@
 **Plans**: 3 plans
 **Plan list**:
 - [ ] 16-01-PLAN.md — UI gates: NEXT DAY disabled while market open, all SwipeConfirm trading blocked after close, ReaditTab text color fix
-- [ ] 16-02-PLAN.md — Intraday messaging: advanceDay schedules messages via pendingMessages queue with random deliverAt, net-worth swing trigger in tickMarket
+- [x] 16-02-PLAN.md — Intraday messaging: advanceDay schedules messages via pendingMessages queue with random deliverAt, net-worth swing trigger in tickMarket
 - [ ] 16-03-PLAN.md — GuruTube content: GURU_VIDEO_MESSAGES (90 strings keyed by ticker and direction), getGuruVideoMessage helper, advanceDay call site update
 
 ## Progress Table
@@ -116,4 +116,4 @@
 | 12: Multiple Endings | 3/3 | Completed | 2026-03-09 |
 | 14: Shark Loans | 3/3 | Completed | 2026-03-14 |
 | 15: Live Market & Polish | 6/6 | Completed | 2026-03-16 |
-| 16: QoL Polish | 0/3 | In Progress | — |
+| 16: QoL Polish | 1/3 | In Progress | — |
