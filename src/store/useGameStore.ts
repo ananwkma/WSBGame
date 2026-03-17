@@ -397,6 +397,7 @@ const getInitialState = () => {
     marketIsOpen: false,     // market closed at start
     bigGainTicker: null as string | null,
     bigLossTicker: null as string | null,
+    netWorthTriggerFiredToday: false,
     intradayBars: {},        // empty map — keyed by ticker symbol
     netWorthBars: [],
     scheduledEvents: seedDayEvents(1),
@@ -1421,6 +1422,8 @@ export const useGameStore = create<GameStore>()(
           netWorthBars: [],
           activeEvents: [],
           scheduledEvents: seedDayEvents(nextDayNum),
+          netWorthTriggerFiredToday: false,
+          pendingMessages: [],
         }));
         
         triggerFlash('neutral');
@@ -1449,7 +1452,7 @@ export const useGameStore = create<GameStore>()(
       partialize: (state) => {
         const { lastFlash, popups, intradayBars, netWorthBars,
                 pendingMessages, activeEvents, scheduledEvents, marketTime, marketIsOpen,
-                bigGainTicker, bigLossTicker, ...rest } = state;
+                bigGainTicker, bigLossTicker, netWorthTriggerFiredToday, ...rest } = state;
         return rest;
       },
     }
