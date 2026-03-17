@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GameStore, StockTicker, GameEvent, EndingType, StockData, CandleBar, MarketEvent, ScheduledMessage } from './types';
-import { generateHistoricalData, calculateBS, scaledIV } from '../utils/marketUtils';
+import { generateHistoricalData, calculateBS, scaledIV, groupBars } from '../utils/marketUtils';
 import { getRandomTemplate, pickSharkMessage, getGuruVideoMessage } from '../data/messageTemplates';
 import type { PerformanceTier, GuruSentimentDir } from '../data/messageTemplates';
 import { playMarketOpen, playMarketClose, playBigGain, playBigLoss, playBorrow, playMessageDing } from '../utils/soundEngine';
@@ -76,7 +76,30 @@ const SHARK_TAUNT_MESSAGES = [
   'Rough day out there. Debt compounds smooth though. Night night.',
 ];
 
-// Generate 9 fake pre-game daily OHLC bars for each ticker to pre-populate the ALL chart
+// openTime encoding for allDayBars: dayAbsoluteIndex * 10000 + intradayMinutes
+// Fake pre-game days: abs indices 1–9. Game day 1 = abs index 10, day 2 = 11, etc.
+const ALL_DAY_STRIDE = 10000;
+// Hour-aligned trading session buckets (9:30am, 10:30am, ..., 3:30pm)
+const TRADING_HOURS = [570, 630, 690, 750, 810, 870, 930] as const;
+
+function makeHourlyBars(startPrice: number, vol: number, dayAbsIdx: number): CandleBar[] {
+  const bars: CandleBar[] = [];
+  let price = startPrice;
+  for (const hourStart of TRADING_HOURS) {
+    const open = price;
+    let high = price, low = price;
+    for (let m = 0; m < 60; m++) {
+      const c = 1 + (Math.random() * vol * 0.04 - vol * 0.02);
+      price = Math.max(100, Math.round(price * c));
+      high = Math.max(high, price);
+      low = Math.min(low, price);
+    }
+    bars.push({ openTime: dayAbsIdx * ALL_DAY_STRIDE + hourStart, open, high, low, close: price });
+  }
+  return bars;
+}
+
+// Generate 9 fake pre-game hourly bars for each ticker to pre-populate the ALL chart
 function generateFakeHistoricalDayBars(): Record<string, CandleBar[]> {
   const result: Record<string, CandleBar[]> = {};
   (Object.keys(INITIAL_STOCKS) as StockTicker[]).forEach(ticker => {
@@ -90,18 +113,16 @@ function generateFakeHistoricalDayBars(): Record<string, CandleBar[]> {
       p = Math.max(100, Math.round(p / change));
       dayOpens.unshift(p);
     }
-    // Build one OHLC bar per fake day with a mini random walk for high/low
-    result[ticker] = dayOpens.map((dayOpen, i) => {
-      let price = dayOpen;
-      let high = price, low = price;
-      for (let m = 0; m < 20; m++) {
-        const c = 1 + (Math.random() * vol * 0.15 - vol * 0.075);
-        price = Math.max(100, Math.round(price * c));
-        high = Math.max(high, price);
-        low = Math.min(low, price);
-      }
-      return { openTime: i + 1, open: dayOpen, high, low, close: price };
-    });
+    // Generate hourly bars for each fake day
+    const allBars: CandleBar[] = [];
+    let runningPrice = dayOpens[0];
+    for (let d = 0; d < 9; d++) {
+      runningPrice = dayOpens[d];
+      const dayBars = makeHourlyBars(runningPrice, vol, d + 1);
+      allBars.push(...dayBars);
+      runningPrice = dayBars[dayBars.length - 1].close;
+    }
+    result[ticker] = allBars;
   });
   return result;
 }
@@ -1492,21 +1513,18 @@ export const useGameStore = create<GameStore>()(
             day: nextDayNum,
             wasCorrect: wasGuruCorrect
           },
-          // Append today's OHLC summary to allDayBars (one bar per completed day)
+          // Append today's hourly bars to allDayBars (game day N = abs index N+9)
           allDayBars: (() => {
             const updated: Record<string, CandleBar[]> = {};
+            const dayAbsIdx = state.day + 9; // game day 1 → abs idx 10
             (Object.keys(INITIAL_STOCKS) as StockTicker[]).forEach(t => {
               const prev = state.allDayBars?.[t] || [];
               const bars = state.intradayBars[t] || [];
               if (bars.length > 0) {
-                const daily: CandleBar = {
-                  openTime: prev.length + 1,
-                  open: bars[0].open,
-                  high: Math.max(...bars.map(b => b.high)),
-                  low: Math.min(...bars.map(b => b.low)),
-                  close: bars[bars.length - 1].close,
-                };
-                updated[t] = [...prev, daily];
+                // Shift intraday openTimes into absolute domain, then group to hourly
+                const shifted = bars.map(b => ({ ...b, openTime: dayAbsIdx * ALL_DAY_STRIDE + b.openTime }));
+                const hourly = groupBars(shifted, 60);
+                updated[t] = [...prev, ...hourly];
               } else {
                 updated[t] = prev;
               }
@@ -1532,7 +1550,7 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'wsb-trader-save',
       storage: createJSONStorage(() => localStorage),
-      version: 4,
+      version: 5,
       migrate: (persistedState: any, version: number) => {
         let state = persistedState as any;
         if (version === 0) {
@@ -1549,7 +1567,8 @@ export const useGameStore = create<GameStore>()(
         if (version < 3) {
           state = { ...state, previousDayBars: {} };
         }
-        if (version < 4) {
+        if (version < 5) {
+          // Reset allDayBars — format changed to hourly encoding (dayAbsIdx * 10000 + intradayMinutes)
           state = { ...state, allDayBars: {} };
         }
         return state;

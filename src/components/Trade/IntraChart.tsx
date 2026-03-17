@@ -35,10 +35,13 @@ const WINDOW_SIZE: Record<Timeframe, number> = {
   '1M': 60, '5M': 78, '10M': 39, '1H': 16, '4H': 10, '1D': 10,
 };
 
-// ALL tab uses day-based window sizes (how many daily bars to show per timeframe)
+// ALL tab window sizes in bars (after grouping by timeframe)
 const ALL_WINDOW_SIZE: Record<Timeframe, number> = {
-  '1M': 60, '5M': 78, '10M': 39, '1H': 5, '4H': 8, '1D': 10,
+  '1M': 60, '5M': 78, '10M': 39, '1H': 16, '4H': 10, '1D': 10,
 };
+
+// Stride used to encode dayAbsoluteIndex in allDayBars openTime
+const ALL_DAY_STRIDE = 10000;
 
 function formatTime(minutes: number): string {
   const h = Math.floor(minutes / 60);
@@ -122,22 +125,21 @@ export const IntraChart: React.FC<IntraChartProps> = ({
   let sourceBars: CandleBar[];
 
   if (!sessionOnly) {
-    // ALL tab — use accumulated daily bars (one bar per completed day)
+    // ALL tab — combine historical hourly bars with today's live bars, then group by timeframe
     if (allDayBars.length > 0) {
-      // Append today's live bar as the trailing bar
       const todaySource = (netWorthBars && netWorthBars.length > 0) ? netWorthBars : intradayBars;
+      // Infer today's dayAbsoluteIndex from the last historical bar
+      const lastAbsIdx = Math.floor(allDayBars[allDayBars.length - 1].openTime / ALL_DAY_STRIDE);
+      const todayAbsIdx = lastAbsIdx + 1;
+      let combined = allDayBars;
       if (todaySource.length > 0) {
-        const todayBar: CandleBar = {
-          openTime: allDayBars.length + 1,
-          open: todaySource[0].open,
-          high: Math.max(...todaySource.map(b => b.high)),
-          low: Math.min(...todaySource.map(b => b.low)),
-          close: todaySource[todaySource.length - 1].close,
-        };
-        sourceBars = [...allDayBars, todayBar];
-      } else {
-        sourceBars = allDayBars;
+        // Shift today's 1-min bars into absolute time domain before grouping
+        const shifted = todaySource.map(b => ({ ...b, openTime: todayAbsIdx * ALL_DAY_STRIDE + b.openTime }));
+        combined = [...allDayBars, ...shifted];
       }
+      // Group by timeframe: 1H→60, 4H→240, 1D→10000 (full day stride)
+      const interval = timeframe === '1D' ? ALL_DAY_STRIDE : INTERVAL_MAP[timeframe];
+      sourceBars = groupBars(combined, interval);
     } else {
       // Fallback for saves without allDayBars: use dailyHistory for 1D, prev+today for others
       if (timeframe === '1D') {
@@ -230,9 +232,21 @@ export const IntraChart: React.FC<IntraChartProps> = ({
         const m = t % 60;
         const ampm = h >= 12 ? 'p' : 'a';
         const h12 = h % 12 === 0 ? 12 : h % 12;
-        const label = sessionOnly
-          ? (m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2,'0')}`)
-          : `D${bar.openTime}`;
+        let label: string;
+        if (sessionOnly) {
+          label = m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2,'0')}`;
+        } else if (timeframe === '1D') {
+          // Show day index derived from absolute openTime
+          label = `D${Math.floor(bar.openTime / ALL_DAY_STRIDE)}`;
+        } else {
+          // Show intraday hour for 1H/4H
+          const intraMins = bar.openTime % ALL_DAY_STRIDE;
+          const ih = Math.floor(intraMins / 60);
+          const im = intraMins % 60;
+          const iampm = ih >= 12 ? 'p' : 'a';
+          const ih12 = ih % 12 === 0 ? 12 : ih % 12;
+          label = im === 0 ? `${ih12}${iampm}` : `${ih12}:${String(im).padStart(2,'0')}`;
+        }
         xAxisLabels.push({ x: xAt(i, sourceBars.length), label });
       }
     });
