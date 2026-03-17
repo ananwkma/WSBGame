@@ -283,9 +283,26 @@ export const IntraChart: React.FC<IntraChartProps> = ({
   const activeTabs = sessionOnly ? TODAY_TIMEFRAMES : ALL_TIMEFRAMES;
 
   // Tooltip layout
-  const TOOLTIP_W = 112;
-  const TOOLTIP_H = showCandleMode ? 68 : 16;
+  // Compute a date label for a bar in the ALL tab
+  const getBarDateLabel = (bar: CandleBar): string | null => {
+    if (sessionOnly) return null;
+    const absIdx = Math.floor(bar.openTime / ALL_DAY_STRIDE);
+    const gameDay = absIdx - 19;
+    if (timeframe === '1D') return `Day ${gameDay}`;
+    const intraMins = bar.openTime % ALL_DAY_STRIDE;
+    const ih = Math.floor(intraMins / 60);
+    const im = intraMins % 60;
+    const iampm = ih >= 12 ? 'p' : 'a';
+    const ih12 = ih % 12 === 0 ? 12 : ih % 12;
+    const timeStr = im === 0 ? `${ih12}${iampm}` : `${ih12}:${String(im).padStart(2, '0')}${iampm}`;
+    return `Day ${gameDay}  ${timeStr}`;
+  };
+
+  const TOOLTIP_W = 120;
   const TOOLTIP_LINE_H = 12;
+  // Extra line height when a date label is present (ALL tab)
+  const DATE_EXTRA_H = sessionOnly ? 0 : 14;
+  const TOOLTIP_H = (showCandleMode ? 68 : 16) + DATE_EXTRA_H;
 
   return (
     <div style={{ width: '100%', fontFamily: 'monospace' }}>
@@ -459,29 +476,42 @@ export const IntraChart: React.FC<IntraChartProps> = ({
                   width={TOOLTIP_W} height={TOOLTIP_H}
                   fill="#2b2b26" stroke="#706b66" strokeWidth="1"
                 />
-                {showCandleMode ? (
-                  <>
-                    <text x={tooltipX + 4} y={tooltipY + TOOLTIP_LINE_H} fontSize="10" fill="#a89f8c" fontFamily="monospace">
-                      {formatTime(bar.openTime)}
-                    </text>
-                    <text x={tooltipX + 4} y={tooltipY + TOOLTIP_LINE_H * 2 + 2} fontSize="10" fill="#e0dbcb" fontFamily="monospace">
-                      O {formatCurrency(bar.open)}
-                    </text>
-                    <text x={tooltipX + 4} y={tooltipY + TOOLTIP_LINE_H * 3 + 4} fontSize="10" fill="#94ba8b" fontFamily="monospace">
-                      H {formatCurrency(bar.high)}
-                    </text>
-                    <text x={tooltipX + 4} y={tooltipY + TOOLTIP_LINE_H * 4 + 6} fontSize="10" fill="#ba8b8b" fontFamily="monospace">
-                      L {formatCurrency(bar.low)}
-                    </text>
-                    <text x={tooltipX + 4} y={tooltipY + TOOLTIP_LINE_H * 5 + 8} fontSize="10" fill="#e0dbcb" fontFamily="monospace">
-                      C {formatCurrency(bar.close)}
-                    </text>
-                  </>
-                ) : (
-                  <text x={tooltipX + 4} y={tooltipY + 13} fontSize="10" fill="#e0dbcb" fontFamily="monospace">
-                    {formatCurrency(bar.close)} @ {formatTime(bar.openTime)}
-                  </text>
-                )}
+                {(() => {
+                  const dateLabel = getBarDateLabel(bar);
+                  const dy = dateLabel ? TOOLTIP_LINE_H + 2 : 0;
+                  return (
+                    <>
+                      {dateLabel && (
+                        <text x={tooltipX + 4} y={tooltipY + TOOLTIP_LINE_H} fontSize="10" fill="#a89f8c" fontFamily="monospace">
+                          {dateLabel}
+                        </text>
+                      )}
+                      {showCandleMode ? (
+                        <>
+                          <text x={tooltipX + 4} y={tooltipY + dy + TOOLTIP_LINE_H} fontSize="10" fill="#a89f8c" fontFamily="monospace">
+                            {formatTime(bar.openTime % ALL_DAY_STRIDE)}
+                          </text>
+                          <text x={tooltipX + 4} y={tooltipY + dy + TOOLTIP_LINE_H * 2 + 2} fontSize="10" fill="#e0dbcb" fontFamily="monospace">
+                            O {formatCurrency(bar.open)}
+                          </text>
+                          <text x={tooltipX + 4} y={tooltipY + dy + TOOLTIP_LINE_H * 3 + 4} fontSize="10" fill="#94ba8b" fontFamily="monospace">
+                            H {formatCurrency(bar.high)}
+                          </text>
+                          <text x={tooltipX + 4} y={tooltipY + dy + TOOLTIP_LINE_H * 4 + 6} fontSize="10" fill="#ba8b8b" fontFamily="monospace">
+                            L {formatCurrency(bar.low)}
+                          </text>
+                          <text x={tooltipX + 4} y={tooltipY + dy + TOOLTIP_LINE_H * 5 + 8} fontSize="10" fill="#e0dbcb" fontFamily="monospace">
+                            C {formatCurrency(bar.close)}
+                          </text>
+                        </>
+                      ) : (
+                        <text x={tooltipX + 4} y={tooltipY + dy + 13} fontSize="10" fill="#e0dbcb" fontFamily="monospace">
+                          {formatCurrency(bar.close)} @ {formatTime(bar.openTime % ALL_DAY_STRIDE)}
+                        </text>
+                      )}
+                    </>
+                  );
+                })()}
               </g>
             );
           })()}
