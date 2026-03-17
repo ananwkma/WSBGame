@@ -5,6 +5,7 @@ import { groupBars, formatCurrency } from '../../utils/marketUtils';
 
 interface IntraChartProps {
   intradayBars: CandleBar[];          // 1-min bars for current day (from store.intradayBars[ticker])
+  previousDayBars?: CandleBar[];      // yesterday's 1-min bars for pre-population
   dailyHistory: HistoryPoint[];       // existing daily HistoryPoint[] from stock.history
   netWorthBars?: CandleBar[];         // only provided for portfolio net worth chart
   marketTime: number;
@@ -14,7 +15,7 @@ interface IntraChartProps {
   chartHeight?: number;               // override chart height in px
 }
 
-type Timeframe = '1M' | '10M' | '30M' | '1D';
+type Timeframe = '1M' | '10M' | '30M' | '1H' | '4H' | '1D';
 
 const DEFAULT_CHART_HEIGHT = 160;
 const PAD_LEFT = 52;
@@ -22,10 +23,16 @@ const PAD_RIGHT = 8;
 const PAD_TOP = 10;
 const PAD_BOTTOM = 30;
 
-const LINE_TIMEFRAMES: Timeframe[] = ['1M', '30M', '1D'];
-const CANDLE_TIMEFRAMES: Timeframe[] = ['10M', '30M', '1D'];
+const INTERVAL_MAP: Record<Timeframe, number> = {
+  '1M': 1, '10M': 10, '30M': 30, '1H': 60, '4H': 240, '1D': 390,
+};
 
-const INTERVAL_MAP: Record<Timeframe, number> = { '1M': 1, '10M': 10, '30M': 30, '1D': 390 };
+const TODAY_TIMEFRAMES: Timeframe[] = ['1M', '10M', '30M'];
+const ALL_TIMEFRAMES: Timeframe[]   = ['1H', '4H', '1D'];
+
+const WINDOW_SIZE: Record<Timeframe, number> = {
+  '1M': 60, '10M': 39, '30M': 13, '1H': 16, '4H': 10, '1D': 10,
+};
 
 function formatTime(minutes: number): string {
   const h = Math.floor(minutes / 60);
@@ -35,13 +42,17 @@ function formatTime(minutes: number): string {
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-function sanitizeTimeframe(tf: string | null, candle: boolean): Timeframe {
-  const valid = candle ? CANDLE_TIMEFRAMES : LINE_TIMEFRAMES;
-  return (valid as string[]).includes(tf ?? '') ? (tf as Timeframe) : valid[0];
-}
+const getDefaultTimeframe = (isToday: boolean): Timeframe =>
+  isToday ? '1M' : '1D';
+
+const sanitizeTimeframe = (tf: string | null, isToday: boolean): Timeframe => {
+  const valid = isToday ? TODAY_TIMEFRAMES : ALL_TIMEFRAMES;
+  return (valid as string[]).includes(tf ?? '') ? (tf as Timeframe) : getDefaultTimeframe(isToday);
+};
 
 export const IntraChart: React.FC<IntraChartProps> = ({
   intradayBars,
+  previousDayBars = [],
   dailyHistory,
   netWorthBars,
   marketTime,
@@ -65,54 +76,77 @@ export const IntraChart: React.FC<IntraChartProps> = ({
     return () => ro.disconnect();
   }, []);
 
+  // One-time migration of old chartTimeframe key
+  useEffect(() => {
+    const old = localStorage.getItem('chartTimeframe');
+    if (old) {
+      if ((TODAY_TIMEFRAMES as string[]).includes(old)) {
+        localStorage.setItem('chartTimeframe-TODAY', old);
+      } else if ((ALL_TIMEFRAMES as string[]).includes(old)) {
+        localStorage.setItem('chartTimeframe-ALL', old);
+      }
+      localStorage.removeItem('chartTimeframe');
+    }
+  }, []);
+
   const [showCandles, setShowCandles] = useState(false);
+  const [sessionOnly, setSessionOnly] = useState(true);  // true = TODAY tab, false = ALL tab
   const [timeframe, setTimeframe] = useState<Timeframe>(() =>
-    sanitizeTimeframe(localStorage.getItem('chartTimeframe'), false)
+    sanitizeTimeframe(localStorage.getItem('chartTimeframe-TODAY'), true)
   );
-  const [sessionOnly, setSessionOnly] = useState(true);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  const handleTabSwitch = (isToday: boolean) => {
+    setSessionOnly(isToday);
+    const key = isToday ? 'chartTimeframe-TODAY' : 'chartTimeframe-ALL';
+    const saved = localStorage.getItem(key);
+    setTimeframe(sanitizeTimeframe(saved, isToday));
+  };
 
   const handleTimeframeChange = (tf: Timeframe) => {
     setTimeframe(tf);
-    localStorage.setItem('chartTimeframe', tf);
+    const key = sessionOnly ? 'chartTimeframe-TODAY' : 'chartTimeframe-ALL';
+    localStorage.setItem(key, tf);
   };
 
-  const handleToggleCandles = () => {
-    const next = !showCandles;
-    setShowCandles(next);
-    if (next && timeframe === '1M') {
-      // 1M is not available in candle mode — bump to 10M
-      setTimeframe('10M');
-      localStorage.setItem('chartTimeframe', '10M');
-    }
-  };
+  const handleToggleCandles = () => setShowCandles(prev => !prev);
 
   // Derive source bars
   let sourceBars: CandleBar[];
-  if (timeframe === '1D' || !sessionOnly) {
-    sourceBars = dailyHistory.map((pt) => ({
-      openTime: pt.turn * 960,
-      open: pt.price,
-      high: pt.price,
-      low: pt.price,
-      close: pt.price,
-    }));
-    // Append today's partial bar — use netWorthBars for portfolio chart, intradayBars for stocks
-    const todaySource = (netWorthBars && netWorthBars.length > 0) ? netWorthBars : intradayBars;
-    if (todaySource.length > 0) {
-      const todayBar: CandleBar = {
-        openTime: 570,
-        open: todaySource[0].open,
-        high: Math.max(...todaySource.map(b => b.high)),
-        low: Math.min(...todaySource.map(b => b.low)),
-        close: todaySource[todaySource.length - 1].close,
-      };
-      sourceBars = [...sourceBars, todayBar];
+
+  if (!sessionOnly) {
+    // ALL tab
+    if (timeframe === '1D') {
+      // Daily history approach (existing behavior — unchanged)
+      sourceBars = dailyHistory.map((pt) => ({
+        openTime: pt.turn * 960,
+        open: pt.price, high: pt.price, low: pt.price, close: pt.price,
+      }));
+      const todaySource = (netWorthBars && netWorthBars.length > 0) ? netWorthBars : intradayBars;
+      if (todaySource.length > 0) {
+        sourceBars = [...sourceBars, {
+          openTime: 570,
+          open: todaySource[0].open,
+          high: Math.max(...todaySource.map(b => b.high)),
+          low: Math.min(...todaySource.map(b => b.low)),
+          close: todaySource[todaySource.length - 1].close,
+        }];
+      }
+    } else {
+      // 1H / 4H: combine yesterday + today bars and group
+      const combined = [...previousDayBars, ...intradayBars];
+      sourceBars = groupBars(combined, INTERVAL_MAP[timeframe]);
     }
   } else {
+    // TODAY tab — pre-populate with previous day bars then apply window
     const barsToUse = (netWorthBars && netWorthBars.length > 0) ? netWorthBars : intradayBars;
-    sourceBars = groupBars(barsToUse, INTERVAL_MAP[timeframe]);
+    const combined = [...previousDayBars, ...barsToUse];
+    sourceBars = groupBars(combined, INTERVAL_MAP[timeframe]);
   }
+
+  // Apply sliding window — always take the last N bars
+  const windowSize = WINDOW_SIZE[timeframe];
+  sourceBars = sourceBars.slice(-windowSize);
 
   // Y scale bounds
   const chartW = renderWidth - PAD_LEFT - PAD_RIGHT;
@@ -128,11 +162,12 @@ export const IntraChart: React.FC<IntraChartProps> = ({
   const yMax = rawMax + range * 0.05;
   const yRange = yMax - yMin;
 
-  const MARKET_OPEN = 570;
-  const MARKET_CLOSE = 960;
-  const isIntraday = timeframe !== '1D' && sessionOnly;
+  // Always use uniform xAt for windowed chart — prevents gaps with pre-populated bars
+  const isIntraday = false;
 
   const xAtTime = (openTime: number): number => {
+    const MARKET_OPEN = 570;
+    const MARKET_CLOSE = 960;
     const t = Math.max(MARKET_OPEN, Math.min(MARKET_CLOSE, openTime));
     return PAD_LEFT + ((t - MARKET_OPEN) / (MARKET_CLOSE - MARKET_OPEN)) * chartW;
   };
@@ -160,25 +195,22 @@ export const IntraChart: React.FC<IntraChartProps> = ({
     return { y: yAt(val), label: formatCurrency(Math.round(val)) };
   });
 
-  // X-axis labels
+  // X-axis labels: show first, last, and 2-3 intermediate bar times
   const xAxisLabels: { x: number; label: string }[] = [];
   const xLabelY = PAD_TOP + chartH + 16;
-  if (isIntraday) {
-    // Fixed time marks: 9:30, 11:00, 12:30, 2:00, 3:30, 4:00
-    [570, 660, 750, 840, 930, 960].forEach(t => {
-      const h = Math.floor(t / 60);
-      const m = t % 60;
-      const ampm = h >= 12 ? 'p' : 'a';
-      const h12 = h % 12 === 0 ? 12 : h % 12;
-      const label = m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2, '0')}`;
-      xAxisLabels.push({ x: xAtTime(t), label });
-    });
-  } else if (sourceBars.length > 0) {
-    // Day labels: D1, D2, … — thin out if many bars
-    const step = Math.max(1, Math.ceil(sourceBars.length / 8));
-    sourceBars.forEach((_, i) => {
-      if (i % step === 0 || i === sourceBars.length - 1) {
-        xAxisLabels.push({ x: xAt(i, sourceBars.length), label: `D${i + 1}` });
+  if (sourceBars.length > 0) {
+    const step = Math.max(1, Math.floor(sourceBars.length / 4));
+    sourceBars.forEach((bar, i) => {
+      if (i === 0 || i === sourceBars.length - 1 || i % step === 0) {
+        const t = bar.openTime % 960; // normalize to intraday minutes
+        const h = Math.floor(t / 60);
+        const m = t % 60;
+        const ampm = h >= 12 ? 'p' : 'a';
+        const h12 = h % 12 === 0 ? 12 : h % 12;
+        const label = sessionOnly
+          ? (m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2,'0')}`)
+          : `D${Math.floor(bar.openTime / 960) + 1}`;
+        xAxisLabels.push({ x: xAt(i, sourceBars.length), label });
       }
     });
   }
@@ -209,10 +241,10 @@ export const IntraChart: React.FC<IntraChartProps> = ({
       ? '#94ba8b'
       : '#ba8b8b';
 
-  const activeTabs = showCandleMode ? CANDLE_TIMEFRAMES : LINE_TIMEFRAMES;
+  const activeTabs = sessionOnly ? TODAY_TIMEFRAMES : ALL_TIMEFRAMES;
 
   // Tooltip layout
-  const TOOLTIP_W = showCandleMode ? 112 : 112;
+  const TOOLTIP_W = 112;
   const TOOLTIP_H = showCandleMode ? 68 : 16;
   const TOOLTIP_LINE_H = 12;
 
@@ -221,27 +253,24 @@ export const IntraChart: React.FC<IntraChartProps> = ({
       {/* Timeframe tabs + toggles row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: '2px' }}>
-          {activeTabs.map(tf => {
-            if (!sessionOnly && tf !== '1D') return null;
-            return (
-              <button
-                key={tf}
-                onClick={() => handleTimeframeChange(tf)}
-                style={{
-                  fontSize: '10px',
-                  padding: '2px 6px',
-                  cursor: 'pointer',
-                  fontFamily: 'monospace',
-                  border: '1px solid #706b66',
-                  background: timeframe === tf ? '#e0dbcb' : 'none',
-                  color: timeframe === tf ? '#2b2b26' : '#706b66',
-                  fontWeight: timeframe === tf ? 'bold' : 'normal',
-                }}
-              >
-                {tf}
-              </button>
-            );
-          })}
+          {activeTabs.map(tf => (
+            <button
+              key={tf}
+              onClick={() => handleTimeframeChange(tf)}
+              style={{
+                fontSize: '10px',
+                padding: '2px 6px',
+                cursor: 'pointer',
+                fontFamily: 'monospace',
+                border: '1px solid #706b66',
+                background: timeframe === tf ? '#e0dbcb' : 'none',
+                color: timeframe === tf ? '#2b2b26' : '#706b66',
+                fontWeight: timeframe === tf ? 'bold' : 'normal',
+              }}
+            >
+              {tf}
+            </button>
+          ))}
         </div>
 
         <div style={{ display: 'flex', gap: '2px', marginLeft: '4px' }}>
@@ -250,7 +279,7 @@ export const IntraChart: React.FC<IntraChartProps> = ({
             return (
               <button
                 key={mode}
-                onClick={() => setSessionOnly(mode === 'TODAY')}
+                onClick={() => handleTabSwitch(mode === 'TODAY')}
                 style={{
                   fontSize: '10px',
                   padding: '2px 6px',
