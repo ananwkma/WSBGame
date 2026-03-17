@@ -49,6 +49,7 @@
 - **EVT-01: Market Events:** Scheduled or probabilistic intraday events (earnings, Fed announcements, meme stock frenzies) cause significant price spikes/drops and narrative reactions.
 - **UX-01: UI & Animation Polish:** Key game moments (big gains, big losses, borrowing, endings) have micro-animations and/or audio cues consistent with the pixel art aesthetic.
 - **UX-02: QoL Polish:** Market-hour gating (NEXT DAY and trading disabled while market is open), intraday message scheduling (random timing + net-worth triggers), GuruTube content expanded to ≥15 messages per ticker per sentiment (≥90 total), readit forum text legible.
+- **UX-03: Phone Lock Screen & Chart Overhaul:** uPhone shows black lock screen when laptop is focused with message preview notifications on arrival; IntraChart TODAY tab has 1m/10m/30m timeframes, ALL tab has 1h/4h/1d timeframes, both supporting line and candle; chart uses a fixed-width sliding window pre-populated with previous day data each morning.
 
 ## Traceability
 
@@ -85,3 +86,5 @@
 | TRADE-12 | Phase 9 | Complete |
 
 | UX-02 | Phase 16 | Complete |
+
+| UX-03 | Phase 17 | Pending |
