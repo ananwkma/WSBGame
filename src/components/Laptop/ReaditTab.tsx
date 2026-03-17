@@ -48,7 +48,7 @@ const REPLIES: Reply[] = [
 
 export const ReaditTab: React.FC = () => {
   return (
-    <div className="phone-app-content" style={{ padding: '8px', overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
+    <div className="phone-app-content" style={{ padding: '8px', overflowY: 'auto', height: '100%', boxSizing: 'border-box', color: '#e0dbcb' }}>
       {/* Main post */}
       <div className="forum-post" style={{ marginBottom: '12px', borderBottom: '2px solid #555', paddingBottom: '10px' }}>
         <div className="forum-post-header" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap' }}>

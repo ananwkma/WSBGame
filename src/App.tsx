@@ -46,7 +46,12 @@ function App() {
       <GameViewport>
         <DayCounter />
         <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '14px', zIndex: 500 }}>
-          <button className="next-turn-btn" style={{ position: 'static' }} onClick={advanceDay}>
+          <button
+            className="next-turn-btn"
+            style={{ position: 'static', opacity: marketTime < 960 ? 0.4 : 1, cursor: marketTime < 960 ? 'not-allowed' : 'pointer' }}
+            disabled={marketTime < 960}
+            onClick={advanceDay}
+          >
             NEXT DAY
           </button>
           <div style={{
