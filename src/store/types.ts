@@ -179,6 +179,7 @@ export interface GameState {
   bigLossTicker: string | null;  // ticker that lost 20%+ in last tick; cleared each tick
   netWorthTriggerFiredToday: boolean; // true if 10%+ swing wife message already fired today
   intradayBars: Record<string, CandleBar[]>;    // 1-min bars per ticker, current day only
+  previousDayBars: Record<string, CandleBar[]>;  // 1-min bars from the last completed trading day (keyed by ticker)
   netWorthBars: CandleBar[];  // 1-min net worth bars, current day only
   scheduledEvents: MarketEvent[];   // seeded at advanceDay time for the upcoming day
   activeEvents: MarketEvent[];      // events fired today, consumed by news panel

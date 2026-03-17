@@ -399,6 +399,7 @@ const getInitialState = () => {
     bigLossTicker: null as string | null,
     netWorthTriggerFiredToday: false,
     intradayBars: {},        // empty map — keyed by ticker symbol
+    previousDayBars: {},     // empty until first advanceDay — keyed by ticker symbol
     netWorthBars: [],
     scheduledEvents: seedDayEvents(1),
     activeEvents: [],
