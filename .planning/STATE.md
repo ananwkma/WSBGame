@@ -60,7 +60,7 @@
 - [x] **Phase 15: Live Market Events Polish** — All 6 plans complete. Real-time market clock, intraday SVG chart, market events with NewsPanel, chiptune sounds, pixel particle bursts, EndingScreen animation, and branding polish (uPhone/uMessage/readit/NEXT DAY/no HYPE LEVEL) all confirmed in-browser.
 
 ## Phase 16: QoL Polish (In Progress)
-- [~] **Plan 01 — Market Gating & Readit Text**: 2/3 tasks complete. NEXT DAY gated (marketTime<960), all 4 SwipeConfirm trading gates added (!marketIsOpen), ReaditTab text color fixed. Awaiting checkpoint: human-verify (Task 3).
+- [x] **Plan 01 — Market Gating & Readit Text**: NEXT DAY gated (marketTime<960), all 4 SwipeConfirm trading gates added (!marketIsOpen), ReaditTab text color fixed. All 6 human-verify checks passed.
 - [x] **Plan 02 — Intraday Message Scheduling**: Wife and extra-contact messages now delivered mid-session via ScheduledMessage queue with random deliverAt 570-959 instead of all at day start. Net-worth swing trigger (10%+ from day open) fires one immediate wife message via tickMarket, once per day.
 
 ## Key Decisions (Phase 16)
@@ -73,8 +73,8 @@
 - Swing message deliverAt: newTime (immediate delivery on next tickMarket pass)
 
 ## Current Focus
-- Phase 16 Plan 02 complete (d11f76f, 40bf64c). Plan 01 still at checkpoint (Tasks 1 & 2 committed dc27ff3, 484206f), awaiting human verification.
-- Last session: Phase 16 Plan 02 complete (2026-03-17)
+- Phase 16 Plans 01 and 02 complete. Plan 01 (dc27ff3, 484206f) all 6 human checks approved. Plan 02 (d11f76f, 40bf64c) complete. Plan 03 is next.
+- Last session: Phase 16 Plan 01 human verification complete (2026-03-17)
 
 ## Key Decisions
 - useMarketClock uses getState().tickMarket() (non-stale closure) for setInterval
