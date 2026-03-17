@@ -76,13 +76,16 @@
 - getRandomPrediction removed from useGameStore import after replacement; fallback still exists inside getGuruVideoMessage in messageTemplates.ts
 
 ## Current Focus
-- Phase 17 Plan 01 complete (1a01030, 837ea9b). Plan 02 is next.
-- Last session: Phase 17 Plan 01 complete (2026-03-17)
+- Phase 17 Plan 02 complete (d462032, cba216d). Plan 03 is next.
+- Last session: Phase 17 Plan 02 complete (2026-03-17)
 
 ## Key Decisions (Phase 17)
 - previousDayBars NOT in partialize exclusion list — persists through page reload for chart pre-population on refresh
 - Snapshot uses state.intradayBars (not get().intradayBars) inside set() call for atomic pre-reset capture
 - persist version 3 migration uses version < 3 guard to cover all older saves regardless of skipped versions
+- pointerEvents: auto required on lock overlay — DualViewShell .screenContent sets pointer-events:none on unfocused panel
+- Lock snapshot taken in focus-transition effect so pre-lock messages don't trigger notifications
+- Single setTimeout in lockNotifs effect dismisses all expired items in one pass using arrivedAt > cutoff filter
 
 ## Key Decisions
 - useMarketClock uses getState().tickMarket() (non-stale closure) for setInterval

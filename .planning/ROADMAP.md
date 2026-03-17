@@ -112,7 +112,7 @@
 **Plans**: 4 plans
 Plan list:
 - [ ] 17-01-PLAN.md — Store: previousDayBars field, advanceDay snapshot, persist v3
-- [ ] 17-02-PLAN.md — Phone lock screen overlay with notification previews + App.tsx wiring
+- [x] 17-02-PLAN.md — Phone lock screen overlay with notification previews + App.tsx wiring
 - [ ] 17-03-PLAN.md — IntraChart overhaul: TODAY/ALL tabs, sliding window, previousDayBars pre-population
 - [ ] 17-04-PLAN.md — Verification: tsc clean build + 7 human gameplay checks
 
@@ -136,3 +136,4 @@ Plan list:
 | 14: Shark Loans | 3/3 | Completed | 2026-03-14 |
 | 15: Live Market & Polish | 6/6 | Completed | 2026-03-16 |
 | 16: QoL Polish | 1/3 | In Progress | — |
+| 17: Phone Lock & Chart | 2/4 | In Progress | — |
