@@ -87,4 +87,4 @@
 
 | UX-02 | Phase 16 | Complete |
 
-| UX-03 | Phase 17 | Pending |
+| UX-03 | Phase 17 | Complete |
