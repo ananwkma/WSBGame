@@ -420,6 +420,31 @@ export const IntraChart: React.FC<IntraChartProps> = ({
             </text>
           ))}
 
+          {/* Day 1 boundary line (ALL tab only) — subtle vertical marker where game starts */}
+          {!sessionOnly && (() => {
+            const firstGameIdx = sourceBars.findIndex(b => Math.floor(b.openTime / ALL_DAY_STRIDE) - 19 >= 1);
+            if (firstGameIdx <= 0) return null; // boundary not visible or no pre-game bars present
+            // Place line halfway between last pre-game bar and first game bar
+            const x0 = xAt(firstGameIdx - 1, sourceBars.length);
+            const x1 = xAt(firstGameIdx, sourceBars.length);
+            const bx = (x0 + x1) / 2;
+            return (
+              <g>
+                <line
+                  x1={bx} y1={PAD_TOP}
+                  x2={bx} y2={PAD_TOP + chartH}
+                  stroke="#e0dbcb" strokeWidth="1" strokeDasharray="4,3" opacity="0.25"
+                />
+                <text
+                  x={bx + 3} y={PAD_TOP + 9}
+                  fontSize="8" fill="#e0dbcb" fontFamily="monospace" opacity="0.45"
+                >
+                  Day 1
+                </text>
+              </g>
+            );
+          })()}
+
           {/* Candle or line rendering */}
           {showCandleMode ? (
             <>
