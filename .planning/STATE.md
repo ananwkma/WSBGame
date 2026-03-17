@@ -59,9 +59,17 @@
 ## Completed Phases
 - [x] **Phase 15: Live Market Events Polish** — All 6 plans complete. Real-time market clock, intraday SVG chart, market events with NewsPanel, chiptune sounds, pixel particle bursts, EndingScreen animation, and branding polish (uPhone/uMessage/readit/NEXT DAY/no HYPE LEVEL) all confirmed in-browser.
 
+## Phase 16: QoL Polish (In Progress)
+- [~] **Plan 01 — Market Gating & Readit Text**: 2/3 tasks complete. NEXT DAY gated (marketTime<960), all 4 SwipeConfirm trading gates added (!marketIsOpen), ReaditTab text color fixed. Awaiting checkpoint: human-verify (Task 3).
+
+## Key Decisions (Phase 16)
+- marketTime < 960 used for NEXT DAY gate (not !marketIsOpen, which also fires during pre-market 360-569, wrongly blocking button at game start)
+- Only SwipeConfirm execution gated; ALL IN/SELL ALL shortcuts and OptionsChain browsing left unaffected
+- color: '#e0dbcb' on ReaditTab outermost wrapper div fixes .forum-post black text cascade
+
 ## Current Focus
-- Phase 15 complete. All plans 15-01 through 15-06 verified.
-- Last session: Phase 15 Plan 06 final verification approved (2026-03-16)
+- Phase 16 Plan 01 at checkpoint. Tasks 1 & 2 committed (dc27ff3, 484206f). Awaiting human verification of 6 checks.
+- Last session: Phase 16 Plan 01 tasks 1-2 complete, checkpoint returned (2026-03-17)
 
 ## Key Decisions
 - useMarketClock uses getState().tickMarket() (non-stale closure) for setInterval

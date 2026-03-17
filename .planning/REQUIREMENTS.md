@@ -84,4 +84,4 @@
 | TRADE-11 | Phase 9 | Complete |
 | TRADE-12 | Phase 9 | Complete |
 
-| UX-02 | Phase 16 | Pending |
+| UX-02 | Phase 16 | Complete |
