@@ -76,8 +76,17 @@
 - getRandomPrediction removed from useGameStore import after replacement; fallback still exists inside getGuruVideoMessage in messageTemplates.ts
 
 ## Current Focus
-- Phase 17 Plan 03 complete (3472342, c975104). Phase 17 IntraChart overhaul done.
-- Last session: Phase 17 Plan 03 complete (2026-03-17)
+- Phase 18 Plan 01 complete (e05fb3d, f85a00d). Clock speed control added.
+- Last session: Phase 18 Plan 01 complete (2026-03-18)
+
+## Phase 18: Clock Speed Control (In Progress)
+- [x] **Plan 01 — Clock Speed Control**: Speed parameter added to useMarketClock (1x/2x/5x, BASE_INTERVAL_MS/speed). App.tsx gains SPEEDS const, ClockSpeed type, clockSpeed state, cycleSpeed function, speed cycle button inside clock box. NEXT DAY resets to 1x. DEBUG/IS_DEBUG_MODE/skipTime/+5m/+1h all removed.
+
+## Key Decisions (Phase 18)
+- SPEEDS const and ClockSpeed type are local to App.tsx — not exported or in Zustand
+- Speed resets to 1x on each NEXT DAY press (local state, not persisted across page refresh)
+- IS_DEBUG_MODE removed entirely from NEXT DAY gate — gate is now purely marketTime < 960
+- Speed button placed as third child inside clock container div (after status text)
 
 ## Key Decisions (Phase 17)
 - previousDayBars NOT in partialize exclusion list — persists through page reload for chart pre-population on refresh

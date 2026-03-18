@@ -129,7 +129,7 @@ Plan list:
   6. Old `+5m`/`+1h` DEV-mode buttons are removed.
 **Plans**: 2 plans
 Plan list:
-- [ ] 18-01-PLAN.md — Hook + App wiring: parameterize useMarketClock, add speed state and cycle button, remove debug buttons
+- [x] 18-01-PLAN.md — Hook + App wiring: parameterize useMarketClock, add speed state and cycle button, remove debug buttons
 - [ ] 18-02-PLAN.md — Human verification: in-browser checks for speed cycling, clock acceleration, and day reset
 
 ## Progress Table
@@ -153,4 +153,4 @@ Plan list:
 | 15: Live Market & Polish | 6/6 | Completed | 2026-03-16 |
 | 16: QoL Polish | 1/3 | In Progress | — |
 | 17: Phone Lock & Chart | 2/4 | In Progress | — |
-| 18: Clock Speed Control | 0/2 | Planned | — |
+| 18: Clock Speed Control | 1/2 | In Progress | — |
