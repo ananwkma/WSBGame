@@ -116,6 +116,19 @@ Plan list:
 - [ ] 17-03-PLAN.md — IntraChart overhaul: TODAY/ALL tabs, sliding window, previousDayBars pre-population
 - [ ] 17-04-PLAN.md — Verification: tsc clean build + 7 human gameplay checks
 
+### Phase 18: Market Clock Speed Control
+**Goal**: Add a clock speed toggle button next to the market clock that cycles through 1x → 2x → 5x → 1x. All players can access it. All market events, messages, and sounds fire normally at the scaled rate. The existing `+5m`/`+1h` debug buttons are removed and replaced by this system.
+**Depends on**: Phase 17
+**Requirements**: UX-04
+**Success Criteria**:
+  1. A speed button sits next to the market clock and shows the current multiplier (1x / 2x / 5x).
+  2. Clicking cycles through 1x → 2x → 5x → 1x.
+  3. The market clock tick interval scales correctly: 2-second real tick at 1x becomes 1-second at 2x, 0.4-second at 5x.
+  4. All market events, messages, and sounds fire at the sped-up rate without suppression.
+  5. Speed resets to 1x when NEXT DAY is pressed.
+  6. Old `+5m`/`+1h` DEV-mode buttons are removed.
+**Plans**: 0 plans
+
 ## Progress Table
 
 
@@ -137,3 +150,4 @@ Plan list:
 | 15: Live Market & Polish | 6/6 | Completed | 2026-03-16 |
 | 16: QoL Polish | 1/3 | In Progress | — |
 | 17: Phone Lock & Chart | 2/4 | In Progress | — |
+| 18: Clock Speed Control | 0/0 | Planned | — |
