@@ -21,25 +21,23 @@ function formatMarketTime(minutes: number): string {
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-const DEBUG = import.meta.env.DEV;
-const IS_DEBUG_MODE = new URLSearchParams(window.location.search).has('debug');
-
-function skipTime(minutes: number) {
-  const tickMarket = useGameStore.getState().tickMarket;
-  for (let i = 0; i < minutes; i++) {
-    tickMarket();
-  }
-}
+const SPEEDS = [1, 2, 5] as const;
+type ClockSpeed = typeof SPEEDS[number]; // 1 | 2 | 5
 
 function App() {
   const [focus, setFocus] = useState<FocusArea>('laptop');
+  const [clockSpeed, setClockSpeed] = useState<ClockSpeed>(1);
   const gameStatus = useGameStore((state) => state.gameStatus);
   const endingType = useGameStore((state) => state.endingType);
   const advanceDay = useGameStore((state) => state.advanceDay);
   const marketTime = useGameStore((state) => state.marketTime);
   const marketIsOpen = useGameStore((state) => state.marketIsOpen);
 
-  useMarketClock();
+  const cycleSpeed = () => {
+    setClockSpeed(prev => SPEEDS[(SPEEDS.indexOf(prev) + 1) % SPEEDS.length]);
+  };
+
+  useMarketClock(clockSpeed);
 
   return (
     <>
@@ -49,9 +47,9 @@ function App() {
         <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '14px', zIndex: 500 }}>
           <button
             className="next-turn-btn"
-            style={{ position: 'static', opacity: (marketTime < 960 && !IS_DEBUG_MODE) ? 0.4 : 1, cursor: (marketTime < 960 && !IS_DEBUG_MODE) ? 'not-allowed' : 'pointer' }}
-            disabled={marketTime < 960 && !IS_DEBUG_MODE}
-            onClick={advanceDay}
+            style={{ position: 'static', opacity: marketTime < 960 ? 0.4 : 1, cursor: marketTime < 960 ? 'not-allowed' : 'pointer' }}
+            disabled={marketTime < 960}
+            onClick={() => { advanceDay(); setClockSpeed(1); }}
           >
             NEXT DAY
           </button>
@@ -85,25 +83,22 @@ function App() {
             }}>
               {marketIsOpen ? '● MARKET OPEN' : '○ MARKET CLOSED'}
             </div>
+            <button
+              className="next-turn-btn"
+              style={{ position: 'static', fontSize: '10px', padding: '3px 8px', marginTop: '2px' }}
+              onClick={cycleSpeed}
+            >
+              {clockSpeed}x
+            </button>
           </div>
-          {DEBUG && (
-            <div style={{ display: 'flex', gap: '4px' }}>
-              <button className="next-turn-btn" style={{ position: 'static', fontSize: '10px', padding: '3px 7px' }} onClick={() => skipTime(5)}>
-                +5m
-              </button>
-              <button className="next-turn-btn" style={{ position: 'static', fontSize: '10px', padding: '3px 7px' }} onClick={() => skipTime(60)}>
-                +1h
-              </button>
-            </div>
-          )}
         </div>
         <ScreenFlash />
         <PopupText />
         {gameStatus === 'ended' && endingType && (
           <EndingScreen result={endingType} />
         )}
-        <DualViewShell 
-          focus={focus} 
+        <DualViewShell
+          focus={focus}
           setFocus={setFocus}
           laptopContent={<LaptopBrowser />}
           phoneContent={<PhoneApp focus={focus} setFocus={setFocus} />}
