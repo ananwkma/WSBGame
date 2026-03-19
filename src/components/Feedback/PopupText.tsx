@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
 
@@ -55,10 +55,12 @@ interface SinglePopupProps {
 }
 
 const SinglePopup: React.FC<SinglePopupProps> = ({ text, type, index, total, onComplete }) => {
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
   useEffect(() => {
-    const timer = setTimeout(onComplete, 1000);
+    const timer = setTimeout(() => onCompleteRef.current(), 1000);
     return () => clearTimeout(timer);
-  }, [onComplete]);
+  }, []);
 
   const isNeutral = type === 'neutral';
 

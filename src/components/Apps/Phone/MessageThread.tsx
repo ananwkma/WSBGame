@@ -53,11 +53,11 @@ const SharkLoanPanel: React.FC = () => {
 
 interface MessageThreadProps {
   thread: Thread;
-  initialLastReadDay: number;
+  initialUnreadCount: number;
   onBack: () => void;
 }
 
-export const MessageThread: React.FC<MessageThreadProps> = ({ thread, initialLastReadDay, onBack }) => {
+export const MessageThread: React.FC<MessageThreadProps> = ({ thread, initialUnreadCount, onBack }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,8 +66,10 @@ export const MessageThread: React.FC<MessageThreadProps> = ({ thread, initialLas
     }
   }, [thread.messages]);
 
-  // Reverse messages to show newest at bottom
+  // Reverse messages to show newest at bottom (messages stored newest-first)
   const displayMessages = [...thread.messages].reverse();
+  // Index in displayMessages (oldest-first) where unread messages begin
+  const firstNewIndex = displayMessages.length - initialUnreadCount;
 
   return (
     <div className="message-thread-container">
@@ -78,11 +80,11 @@ export const MessageThread: React.FC<MessageThreadProps> = ({ thread, initialLas
           <span className="pixel-bold">{thread.contactName}</span>
         </div>
       </div>
-      
+
       <div className="thread-messages phone-app-content" ref={scrollRef}>
         {displayMessages.map((msg, index) => {
-          const isNew = msg.day > initialLastReadDay;
-          const showNewSeparator = isNew && (index === 0 || displayMessages[index - 1].day <= initialLastReadDay);
+          const isNew = initialUnreadCount > 0 && index >= firstNewIndex;
+          const showNewSeparator = isNew && index === firstNewIndex && index > 0;
 
           return (
             <React.Fragment key={msg.id}>

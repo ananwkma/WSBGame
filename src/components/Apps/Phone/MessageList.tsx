@@ -11,7 +11,7 @@ export const MessageList: React.FC<MessageListProps> = ({ threads, onSelectThrea
     <div className="message-list">
       {threads.map((thread) => {
         const lastMessage = thread.messages[0];
-        const hasUnread = lastMessage && lastMessage.day > thread.lastReadDay;
+        const hasUnread = (thread.unreadCount ?? 0) > 0;
 
         return (
           <div 

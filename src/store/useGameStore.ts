@@ -127,6 +127,18 @@ function generateFakeHistoricalDayBars(): Record<string, CandleBar[]> {
   return result;
 }
 
+// Generate 19 flat pre-game hourly net worth bars at starting cash ($100,000)
+function generateFlatNetWorthBars(): CandleBar[] {
+  const INITIAL_CASH = 10000000; // $100,000 in cents
+  const bars: CandleBar[] = [];
+  for (let d = 0; d < 19; d++) {
+    for (const hourStart of TRADING_HOURS) {
+      bars.push({ openTime: (d + 1) * ALL_DAY_STRIDE + hourStart, open: INITIAL_CASH, high: INITIAL_CASH, low: INITIAL_CASH, close: INITIAL_CASH });
+    }
+  }
+  return bars;
+}
+
 // Seed scheduled events for a given game day
 function seedDayEvents(day: number): MarketEvent[] {
   const events: MarketEvent[] = [];
@@ -412,15 +424,16 @@ export const generateOptionsChain = (ticker: StockTicker, currentPrice: number, 
 
 const getInitialState = () => {
   const initialThreads: Record<string, any> = {
-    'Ape Friend': { contactName: 'Ape Friend', avatar: '🦍', lastReadDay: 1, messages: [] },
-    'Wife': { contactName: 'Wife', avatar: '👩', lastReadDay: 1, messages: [] },
-    'Brokerage': { contactName: 'Brokerage', avatar: '🏛️', lastReadDay: 1, messages: [] },
-    'Crypto Guru': { contactName: 'Crypto Guru', avatar: '📉', lastReadDay: 1, messages: [] },
-    "Wife's Boyfriend": { contactName: "Wife's Boyfriend", avatar: '😎', lastReadDay: 1, messages: [] },
+    'Ape Friend': { contactName: 'Ape Friend', avatar: '🦍', lastReadDay: 1, unreadCount: 0, messages: [] },
+    'Wife': { contactName: 'Wife', avatar: '👩', lastReadDay: 1, unreadCount: 0, messages: [] },
+    'Brokerage': { contactName: 'Brokerage', avatar: '🏛️', lastReadDay: 1, unreadCount: 0, messages: [] },
+    'Crypto Guru': { contactName: 'Crypto Guru', avatar: '📉', lastReadDay: 1, unreadCount: 0, messages: [] },
+    "Wife's Boyfriend": { contactName: "Wife's Boyfriend", avatar: '😎', lastReadDay: 1, unreadCount: 0, messages: [] },
     'Loan Shark': {
       contactName: 'Loan Shark',
       avatar: '🦈',
       lastReadDay: 1,
+      unreadCount: 0,
       messages: [
         { id: 'shark-intro', sender: 'Loan Shark', text: "Hey. Got your number from a mutual friend. I do short-term capital solutions. Cash up front, simple terms. 20% per day. Every day. Before you ask — yes, every day. Compounding. Call me when the market treats you bad.", day: 1 }
       ]
@@ -453,6 +466,7 @@ const getInitialState = () => {
     previousDayBars: {},     // empty until first advanceDay — keyed by ticker symbol
     allDayBars: generateFakeHistoricalDayBars(),  // pre-populated with 9 fake pre-game days
     netWorthBars: [],
+    netWorthAllDayBars: generateFlatNetWorthBars(), // 19 flat pre-game days at starting cash
     scheduledEvents: seedDayEvents(1),
     activeEvents: [],
     pendingMessages: [],
@@ -893,7 +907,8 @@ export const useGameStore = create<GameStore>()(
                   ...newThreadsFromEvents,
                   'Loan Shark': {
                     ...sharkThread,
-                    messages: [...sharkThread.messages, tauntMsg],
+                    messages: [tauntMsg, ...sharkThread.messages],
+                    unreadCount: (sharkThread.unreadCount ?? 0) + 1,
                   },
                 };
               }
@@ -914,26 +929,28 @@ export const useGameStore = create<GameStore>()(
           dueMsgs.forEach(({ message }) => {
             const threadEntry = newThreads[message.sender];
             if (threadEntry) {
-              newThreads[message.sender] = { ...threadEntry, messages: [...threadEntry.messages, message] };
+              newThreads[message.sender] = { ...threadEntry, messages: [message, ...threadEntry.messages], unreadCount: (threadEntry.unreadCount ?? 0) + 1 };
             }
           });
         }
 
-        // Net worth bar for portfolio chart
+        // Net worth bar for portfolio chart — only update during market hours
         const currentNetWorth = get().getNetWorth();
         const nwBars = state.netWorthBars;
-        const lastNwBar = nwBars[nwBars.length - 1];
-        let newNetWorthBars: CandleBar[];
-        if (lastNwBar && lastNwBar.openTime === newTime) {
-          newNetWorthBars = [
-            ...nwBars.slice(0, -1),
-            { ...lastNwBar, high: Math.max(lastNwBar.high, currentNetWorth), low: Math.min(lastNwBar.low, currentNetWorth), close: currentNetWorth },
-          ];
-        } else {
-          newNetWorthBars = [
-            ...nwBars,
-            { openTime: newTime, open: currentNetWorth, high: currentNetWorth, low: currentNetWorth, close: currentNetWorth },
-          ];
+        let newNetWorthBars: CandleBar[] = nwBars;
+        if (newIsOpen || newTime === 960) {
+          const lastNwBar = nwBars[nwBars.length - 1];
+          if (lastNwBar && lastNwBar.openTime === newTime) {
+            newNetWorthBars = [
+              ...nwBars.slice(0, -1),
+              { ...lastNwBar, high: Math.max(lastNwBar.high, currentNetWorth), low: Math.min(lastNwBar.low, currentNetWorth), close: currentNetWorth },
+            ];
+          } else {
+            newNetWorthBars = [
+              ...nwBars,
+              { openTime: newTime, open: currentNetWorth, high: currentNetWorth, low: currentNetWorth, close: currentNetWorth },
+            ];
+          }
         }
 
         // Net-worth swing trigger: fire one immediate wife message on 10%+ move from day open
@@ -1033,6 +1050,7 @@ export const useGameStore = create<GameStore>()(
               [sender]: {
                 ...threads[sender],
                 lastReadDay: day,
+                unreadCount: 0,
               },
             },
           });
@@ -1121,6 +1139,7 @@ export const useGameStore = create<GameStore>()(
                 contactName: sender,
                 avatar: '👤',
                 lastReadDay: day - 1,
+                unreadCount: 0,
                 messages: [],
               };
             }
@@ -1128,6 +1147,7 @@ export const useGameStore = create<GameStore>()(
               { ...event.payload, day: event.day },
               ...newThreads[sender].messages,
             ];
+            newThreads[sender].unreadCount = (newThreads[sender].unreadCount ?? 0) + 1;
           } else if (event.type === 'POST') {
             newForumPosts.unshift(event.payload);
           }
@@ -1379,6 +1399,7 @@ export const useGameStore = create<GameStore>()(
 
         if (newThreads['Crypto Guru']) {
           newThreads['Crypto Guru'].messages = [guruMessage, ...newThreads['Crypto Guru'].messages];
+          newThreads['Crypto Guru'].unreadCount = (newThreads['Crypto Guru'].unreadCount ?? 0) + 1;
         }
 
         // Scheduled messages — delivered mid-session via tickMarket instead of at day start
@@ -1416,6 +1437,7 @@ export const useGameStore = create<GameStore>()(
           };
           if (newThreads['Loan Shark']) {
             newThreads['Loan Shark'].messages = [sharkMsg, ...newThreads['Loan Shark'].messages];
+            newThreads['Loan Shark'].unreadCount = (newThreads['Loan Shark'].unreadCount ?? 0) + 1;
           }
         }
 
@@ -1445,7 +1467,8 @@ export const useGameStore = create<GameStore>()(
             newThreads[contact.name] = {
               contactName: contact.name,
               avatar: contact.avatar,
-              lastReadDay: day, // Mark as new (day before nextDayNum)
+              lastReadDay: day,
+              unreadCount: 0,
               messages: [],
             };
           }
@@ -1531,6 +1554,17 @@ export const useGameStore = create<GameStore>()(
             });
             return updated;
           })(),
+          // Append today's net worth bars to netWorthAllDayBars
+          netWorthAllDayBars: (() => {
+            const dayAbsIdx = state.day + 19;
+            const nwBars = state.netWorthBars;
+            if (nwBars.length > 0) {
+              const shifted = nwBars.map(b => ({ ...b, openTime: dayAbsIdx * ALL_DAY_STRIDE + b.openTime }));
+              const hourly = groupBars(shifted, 60);
+              return [...(state.netWorthAllDayBars || []), ...hourly];
+            }
+            return state.netWorthAllDayBars || [];
+          })(),
           // Reset intraday market state for the new day
           marketTime: 480,       // 8:00am — pre-market window before 9:30am open
           marketIsOpen: false,   // market starts closed; useMarketClock opens it
@@ -1550,7 +1584,7 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'wsb-trader-save',
       storage: createJSONStorage(() => localStorage),
-      version: 5,
+      version: 7,
       migrate: (persistedState: any, version: number) => {
         let state = persistedState as any;
         if (version === 0) {
@@ -1570,6 +1604,19 @@ export const useGameStore = create<GameStore>()(
         if (version < 5) {
           // Reset allDayBars — format changed to hourly encoding (dayAbsIdx * 10000 + intradayMinutes)
           state = { ...state, allDayBars: {} };
+        }
+        if (version < 6) {
+          // Add unreadCount: 0 to all existing thread objects
+          if (state.threads) {
+            const patched: Record<string, any> = {};
+            for (const key of Object.keys(state.threads)) {
+              patched[key] = { ...state.threads[key], unreadCount: 0 };
+            }
+            state = { ...state, threads: patched };
+          }
+        }
+        if (version < 7) {
+          state = { ...state, netWorthAllDayBars: generateFlatNetWorthBars() };
         }
         return state;
       },

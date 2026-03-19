@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { line, curveLinear } from 'd3-shape';
 import type { CandleBar, HistoryPoint } from '../../store/types';
-import { groupBars, formatCurrency } from '../../utils/marketUtils';
+import { groupBars, formatCurrency, formatCurrencyCompact } from '../../utils/marketUtils';
 
 interface IntraChartProps {
   intradayBars: CandleBar[];          // 1-min bars for current day (from store.intradayBars[ticker])
@@ -9,6 +9,7 @@ interface IntraChartProps {
   allDayBars?: CandleBar[];           // one OHLC bar per completed day for ALL tab (sliding 10-day window)
   dailyHistory: HistoryPoint[];       // existing daily HistoryPoint[] from stock.history
   netWorthBars?: CandleBar[];         // only provided for portfolio net worth chart
+  currentDay?: number;                // game day number, used for date labels when allDayBars is absent
   marketTime: number;
   marketIsOpen: boolean;
   showCandleToggle?: boolean;         // default true; set false for net worth chart
@@ -66,6 +67,7 @@ export const IntraChart: React.FC<IntraChartProps> = ({
   allDayBars = [],
   dailyHistory,
   netWorthBars,
+  currentDay,
   marketTime,
   marketIsOpen,
   showCandleToggle = true,
@@ -159,7 +161,8 @@ export const IntraChart: React.FC<IntraChartProps> = ({
           }];
         }
       } else {
-        const combined = [...previousDayBars, ...intradayBars];
+        const todaySourceFb = (netWorthBars && netWorthBars.length > 0) ? netWorthBars : intradayBars;
+        const combined = [...previousDayBars, ...todaySourceFb];
         sourceBars = groupBars(combined, INTERVAL_MAP[timeframe]);
       }
     }
@@ -218,8 +221,12 @@ export const IntraChart: React.FC<IntraChartProps> = ({
 
   const yTicks = Array.from({ length: 4 }, (_, i) => {
     const val = yMin + (yRange * (i + 0.5)) / 4;
-    return { y: yAt(val), label: formatCurrency(Math.round(val)) };
+    return { y: yAt(val), label: formatCurrencyCompact(Math.round(val)) };
   });
+
+  // Whether the current source bars use the ALL_DAY_STRIDE encoding (absolute time domain).
+  // False when falling back to raw intraday bars (e.g. portfolio chart with no allDayBars).
+  const hasEncodedBars = !sessionOnly && allDayBars.length > 0;
 
   // X-axis labels: show first, last, and 2-3 intermediate bar times
   const xAxisLabels: { x: number; label: string }[] = [];
@@ -234,8 +241,14 @@ export const IntraChart: React.FC<IntraChartProps> = ({
         const ampm = h >= 12 ? 'p' : 'a';
         const h12 = h % 12 === 0 ? 12 : h % 12;
         let label: string;
-        if (sessionOnly) {
-          label = m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2,'0')}`;
+        if (sessionOnly || !hasEncodedBars) {
+          // TODAY tab or fallback non-encoded bars: show plain intraday time
+          const rawMins = bar.openTime % ALL_DAY_STRIDE; // harmless for plain intraday (openTime < ALL_DAY_STRIDE)
+          const rh = Math.floor(rawMins / 60);
+          const rm = rawMins % 60;
+          const rampm = rh >= 12 ? 'p' : 'a';
+          const rh12 = rh % 12 === 0 ? 12 : rh % 12;
+          label = rm === 0 ? `${rh12}${rampm}` : `${rh12}:${String(rm).padStart(2,'0')}`;
         } else if (timeframe === '1D') {
           // Show game-relative day: abs idx 20 = game Day 1, pre-game days are negative
           const gameDay = Math.floor(bar.openTime / ALL_DAY_STRIDE) - 19;
@@ -286,22 +299,34 @@ export const IntraChart: React.FC<IntraChartProps> = ({
   // Compute a date label for a bar in the ALL tab
   const getBarDateLabel = (bar: CandleBar): string | null => {
     if (sessionOnly) return null;
+    if (!hasEncodedBars) {
+      // Fallback mode: bars use plain intraday openTime — use currentDay prop if available
+      if (currentDay === undefined) return null;
+      if (timeframe === '1D') return `DAY ${currentDay}`;
+      const ih = Math.floor(bar.openTime / 60);
+      const im = bar.openTime % 60;
+      const iampm = ih >= 12 ? 'p' : 'a';
+      const ih12 = ih % 12 === 0 ? 12 : ih % 12;
+      const timeStr = im === 0 ? `${ih12}${iampm}` : `${ih12}:${String(im).padStart(2, '0')}${iampm}`;
+      return `DAY ${currentDay}  ${timeStr}`;
+    }
     const absIdx = Math.floor(bar.openTime / ALL_DAY_STRIDE);
     const gameDay = absIdx - 19;
-    if (timeframe === '1D') return `Day ${gameDay}`;
+    if (timeframe === '1D') return `DAY ${gameDay}`;
     const intraMins = bar.openTime % ALL_DAY_STRIDE;
     const ih = Math.floor(intraMins / 60);
     const im = intraMins % 60;
     const iampm = ih >= 12 ? 'p' : 'a';
     const ih12 = ih % 12 === 0 ? 12 : ih % 12;
     const timeStr = im === 0 ? `${ih12}${iampm}` : `${ih12}:${String(im).padStart(2, '0')}${iampm}`;
-    return `Day ${gameDay}  ${timeStr}`;
+    return `DAY ${gameDay}  ${timeStr}`;
   };
 
+  const hasDateLabel = !sessionOnly && (hasEncodedBars || currentDay !== undefined);
   const TOOLTIP_W = 120;
   const TOOLTIP_LINE_H = 12;
   // Extra line height when a date label is present (ALL tab)
-  const DATE_EXTRA_H = sessionOnly ? 0 : 14;
+  const DATE_EXTRA_H = hasDateLabel ? 14 : 0;
   const TOOLTIP_H = (showCandleMode ? 68 : 16) + DATE_EXTRA_H;
 
   return (
@@ -420,8 +445,8 @@ export const IntraChart: React.FC<IntraChartProps> = ({
             </text>
           ))}
 
-          {/* Day 1 boundary line (ALL tab only) — subtle vertical marker where game starts */}
-          {!sessionOnly && (() => {
+          {/* Day 1 boundary line (ALL tab with encoded bars only) — subtle vertical marker where game starts */}
+          {hasEncodedBars && (() => {
             const firstGameIdx = sourceBars.findIndex(b => Math.floor(b.openTime / ALL_DAY_STRIDE) - 19 >= 1);
             if (firstGameIdx <= 0) return null; // boundary not visible or no pre-game bars present
             // Place line halfway between last pre-game bar and first game bar
@@ -433,13 +458,13 @@ export const IntraChart: React.FC<IntraChartProps> = ({
                 <line
                   x1={bx} y1={PAD_TOP}
                   x2={bx} y2={PAD_TOP + chartH}
-                  stroke="#e0dbcb" strokeWidth="1" strokeDasharray="4,3" opacity="0.25"
+                  stroke="#e0dbcb" strokeWidth="2" strokeDasharray="4,3" opacity="0.75"
                 />
                 <text
-                  x={bx + 3} y={PAD_TOP + 9}
-                  fontSize="8" fill="#e0dbcb" fontFamily="monospace" opacity="0.45"
+                  x={bx + 4} y={PAD_TOP + 11}
+                  fontSize="11" fill="#e0dbcb" fontFamily="monospace" opacity="0.9"
                 >
-                  Day 1
+                  DAY 1
                 </text>
               </g>
             );
@@ -517,21 +542,21 @@ export const IntraChart: React.FC<IntraChartProps> = ({
                             {formatTime(bar.openTime % ALL_DAY_STRIDE)}
                           </text>
                           <text x={tooltipX + 4} y={tooltipY + dy + TOOLTIP_LINE_H * 2 + 2} fontSize="10" fill="#e0dbcb" fontFamily="monospace">
-                            O {formatCurrency(bar.open)}
+                            O {formatCurrencyCompact(bar.open)}
                           </text>
                           <text x={tooltipX + 4} y={tooltipY + dy + TOOLTIP_LINE_H * 3 + 4} fontSize="10" fill="#94ba8b" fontFamily="monospace">
-                            H {formatCurrency(bar.high)}
+                            H {formatCurrencyCompact(bar.high)}
                           </text>
                           <text x={tooltipX + 4} y={tooltipY + dy + TOOLTIP_LINE_H * 4 + 6} fontSize="10" fill="#ba8b8b" fontFamily="monospace">
-                            L {formatCurrency(bar.low)}
+                            L {formatCurrencyCompact(bar.low)}
                           </text>
                           <text x={tooltipX + 4} y={tooltipY + dy + TOOLTIP_LINE_H * 5 + 8} fontSize="10" fill="#e0dbcb" fontFamily="monospace">
-                            C {formatCurrency(bar.close)}
+                            C {formatCurrencyCompact(bar.close)}
                           </text>
                         </>
                       ) : (
                         <text x={tooltipX + 4} y={tooltipY + dy + 13} fontSize="10" fill="#e0dbcb" fontFamily="monospace">
-                          {formatCurrency(bar.close)} @ {formatTime(bar.openTime % ALL_DAY_STRIDE)}
+                          {formatCurrencyCompact(bar.close)} @ {formatTime(bar.openTime % ALL_DAY_STRIDE)}
                         </text>
                       )}
                     </>

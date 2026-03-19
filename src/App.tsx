@@ -21,8 +21,10 @@ function formatMarketTime(minutes: number): string {
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-const SPEEDS = [1, 2, 5] as const;
-type ClockSpeed = typeof SPEEDS[number]; // 1 | 2 | 5
+const SPEEDS = [1, 2, 5, 10, 100] as const;
+type ClockSpeed = typeof SPEEDS[number]; // 1 | 2 | 5 | 10 | 100
+
+const IS_DEBUG_MODE = new URLSearchParams(window.location.search).has('debug');
 
 function App() {
   const [focus, setFocus] = useState<FocusArea>('laptop');
@@ -47,8 +49,8 @@ function App() {
         <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '14px', zIndex: 500 }}>
           <button
             className="next-turn-btn"
-            style={{ position: 'static', opacity: marketTime < 960 ? 0.4 : 1, cursor: marketTime < 960 ? 'not-allowed' : 'pointer' }}
-            disabled={marketTime < 960}
+            style={{ position: 'static', opacity: (marketTime < 960 && !IS_DEBUG_MODE) ? 0.4 : 1, cursor: (marketTime < 960 && !IS_DEBUG_MODE) ? 'not-allowed' : 'pointer' }}
+            disabled={marketTime < 960 && !IS_DEBUG_MODE}
             onClick={() => { advanceDay(); setClockSpeed(1); }}
           >
             NEXT DAY

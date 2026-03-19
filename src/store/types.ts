@@ -99,6 +99,7 @@ export interface Thread {
   contactName: string;
   avatar: string;
   lastReadDay: number;
+  unreadCount: number;
   messages: Message[];
 }
 
@@ -181,7 +182,8 @@ export interface GameState {
   intradayBars: Record<string, CandleBar[]>;    // 1-min bars per ticker, current day only
   previousDayBars: Record<string, CandleBar[]>;  // 1-min bars from the last completed trading day (keyed by ticker)
   allDayBars: Record<string, CandleBar[]>;       // one OHLC bar per completed day, accumulated (keyed by ticker)
-  netWorthBars: CandleBar[];  // 1-min net worth bars, current day only
+  netWorthBars: CandleBar[];          // 1-min net worth bars, current day only
+  netWorthAllDayBars: CandleBar[];    // hourly net worth bars across all days (same encoding as allDayBars)
   scheduledEvents: MarketEvent[];   // seeded at advanceDay time for the upcoming day
   activeEvents: MarketEvent[];      // events fired today, consumed by news panel
   pendingMessages: ScheduledMessage[]; // mid-session messages queue

@@ -55,10 +55,34 @@ export const generateHistoricalData = (
  * @returns A formatted string like "$12.34"
  */
 export const formatCurrency = (cents: number): string => {
-  return `$${(Math.abs(cents) / 100).toLocaleString(undefined, { 
+  return `$${(Math.abs(cents) / 100).toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`;
+};
+
+// Suffixes from thousand up to quadrillion; beyond quadrillion → HOLY SHIT
+const COMPACT_TIERS: [number, string][] = [
+  [1e15, 'q'],  // quadrillion
+  [1e12, 't'],  // trillion
+  [1e9,  'b'],  // billion
+  [1e6,  'm'],  // million
+  [1e3,  'k'],  // thousand
+];
+
+export const formatCurrencyCompact = (cents: number): string => {
+  const neg = cents < 0;
+  const dollars = Math.abs(cents) / 100;
+  const prefix = neg ? '-$' : '$';
+  if (dollars >= 1e18) return `${neg ? '-' : ''}$HOLY SHIT`;
+  for (const [divisor, suffix] of COMPACT_TIERS) {
+    if (dollars >= divisor) {
+      const val = dollars / divisor;
+      const str = val % 1 === 0 ? `${val}` : parseFloat(val.toFixed(2)).toString();
+      return `${prefix}${str}${suffix}`;
+    }
+  }
+  return `${prefix}${dollars.toFixed(2)}`;
 };
 
 /**

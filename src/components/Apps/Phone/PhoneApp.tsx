@@ -25,7 +25,10 @@ export const PhoneApp: React.FC<PhoneAppProps> = ({ focus, setFocus }) => {
   const threads = useGameStore((state) => state.threads);
 
   const prevFocusRef = useRef<FocusArea>(focus);
-  const lockSnapshotRef = useRef<Record<string, number>>({});
+  // Initialize snapshot from current counts so pre-existing messages don't trigger stale notifications
+  const lockSnapshotRef = useRef<Record<string, number>>(
+    Object.fromEntries(Object.values(threads).map(t => [t.contactName, t.messages.length]))
+  );
   const [lockNotifs, setLockNotifs] = useState<LockNotif[]>([]);
 
   // When phone becomes locked, snapshot current message counts and clear old notifs
@@ -51,7 +54,7 @@ export const PhoneApp: React.FC<PhoneAppProps> = ({ focus, setFocus }) => {
       .map(t => ({
         id: `${t.contactName}-${t.messages.length}`,
         contactName: t.contactName,
-        preview: t.messages[t.messages.length - 1]?.text ?? '',
+        preview: t.messages[0]?.text ?? '',
         arrivedAt: now,
       }));
 

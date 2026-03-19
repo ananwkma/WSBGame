@@ -9,7 +9,7 @@ export const ChatApp: React.FC = () => {
   const setThreadRead = useGameStore((state) => state.setThreadRead);
   
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
-  const [initialLastReadDay, setInitialLastReadDay] = useState<number>(0);
+  const [initialUnreadCount, setInitialUnreadCount] = useState<number>(0);
 
   const sortedThreads = useMemo(() => {
     return Object.values(threads).sort((a, b) => {
@@ -27,8 +27,7 @@ export const ChatApp: React.FC = () => {
   const handleSelectThread = (contactId: string) => {
     const thread = threads[contactId];
     if (thread) {
-      // Capture the lastReadDay BEFORE we mark it as read for the "New Messages" separator
-      setInitialLastReadDay(thread.lastReadDay);
+      setInitialUnreadCount(thread.unreadCount ?? 0);
       setThreadRead(contactId);
       setSelectedContactId(contactId);
     }
@@ -40,9 +39,9 @@ export const ChatApp: React.FC = () => {
 
   if (selectedContactId && threads[selectedContactId]) {
     return (
-      <MessageThread 
-        thread={threads[selectedContactId]} 
-        initialLastReadDay={initialLastReadDay}
+      <MessageThread
+        thread={threads[selectedContactId]}
+        initialUnreadCount={initialUnreadCount}
         onBack={handleBack}
       />
     );
