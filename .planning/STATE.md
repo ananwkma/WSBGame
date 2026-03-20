@@ -58,6 +58,8 @@
 
 ## Completed Phases
 - [x] **Phase 15: Live Market Events Polish** — All 6 plans complete. Real-time market clock, intraday SVG chart, market events with NewsPanel, chiptune sounds, pixel particle bursts, EndingScreen animation, and branding polish (uPhone/uMessage/readit/NEXT DAY/no HYPE LEVEL) all confirmed in-browser.
+- [x] **Phase 17: Phone Lock Screen & Chart Overhaul** — All 4 plans complete. uPhone lock screen with notification previews, IntraChart TODAY/ALL tabs (1m/10m/30m + 1h/4h/1d), sliding window, previousDayBars pre-population. Verified 2026-03-19.
+- [x] **Phase 18: Clock Speed Control** — All 2 plans complete. 1x/2x/5x speed toggle, parameterized useMarketClock, debug button removal. Verified 2026-03-19.
 
 ## Phase 16: QoL Polish (In Progress)
 - [x] **Plan 01 — Market Gating & Readit Text**: NEXT DAY gated (marketTime<960), all 4 SwipeConfirm trading gates added (!marketIsOpen), ReaditTab text color fixed. All 6 human-verify checks passed.
@@ -76,11 +78,12 @@
 - getRandomPrediction removed from useGameStore import after replacement; fallback still exists inside getGuruVideoMessage in messageTemplates.ts
 
 ## Current Focus
-- Phase 18 Plan 01 complete (e05fb3d, f85a00d). Clock speed control added.
-- Last session: Phase 18 Plan 01 complete (2026-03-18)
+- Phase 18 complete (approved 2026-03-19). Moving to Phase 19: Custom Art Asset Pipeline.
+- Last session: Phases 17 and 18 approved (2026-03-19)
 
-## Phase 18: Clock Speed Control (In Progress)
+## Phase 18: Clock Speed Control (Complete)
 - [x] **Plan 01 — Clock Speed Control**: Speed parameter added to useMarketClock (1x/2x/5x, BASE_INTERVAL_MS/speed). App.tsx gains SPEEDS const, ClockSpeed type, clockSpeed state, cycleSpeed function, speed cycle button inside clock box. NEXT DAY resets to 1x. DEBUG/IS_DEBUG_MODE/skipTime/+5m/+1h all removed.
+- [x] **Plan 02 — Verification**: Human-approved 2026-03-19. All checks passed.
 
 ## Key Decisions (Phase 18)
 - SPEEDS const and ClockSpeed type are local to App.tsx — not exported or in Zustand

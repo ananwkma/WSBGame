@@ -14,7 +14,8 @@
 - [x] **Phase 11: Granular Narrative & Debt Foundation** - 14-tier narrative brackets, 800+ message templates, and groundwork for loans/debt.
 - [x] **Phase 12: Multiple Endings Expansion** - 10 distinct endings with WSB-ironic copy, pixel art sprites, and behavior-based detection cascade.
 - [x] **Phase 16: QoL Polish** - Market-hour gating, intraday message scheduling, GuruTube content expansion, readit text fix. (completed 2026-03-17)
-- [ ] **Phase 17: Phone Lock Screen & Chart Overhaul** - uPhone lock screen with message previews when laptop focused; chart timeframe redesign (TODAY: 1m/10m/30m, ALL: 1h/4h/1d) with sliding window starting from previous day data.
+- [x] **Phase 17: Phone Lock Screen & Chart Overhaul** - uPhone lock screen with message previews when laptop focused; chart timeframe redesign (TODAY: 1m/10m/30m, ALL: 1h/4h/1d) with sliding window starting from previous day data. (completed 2026-03-18)
+- [x] **Phase 18: Market Clock Speed Control** - Clock speed toggle (1x/2x/5x/10x/100x) next to market clock, speed resets on NEXT DAY, debug mode always-on NEXT DAY button. (completed 2026-03-18)
 
 ## Phase Details
 
@@ -111,10 +112,10 @@
   6. When a new trading day begins, the chart opens pre-populated with the previous day's data on the left side of the window.
 **Plans**: 4 plans
 Plan list:
-- [ ] 17-01-PLAN.md — Store: previousDayBars field, advanceDay snapshot, persist v3
+- [x] 17-01-PLAN.md — Store: previousDayBars field, advanceDay snapshot, persist v3
 - [x] 17-02-PLAN.md — Phone lock screen overlay with notification previews + App.tsx wiring
-- [ ] 17-03-PLAN.md — IntraChart overhaul: TODAY/ALL tabs, sliding window, previousDayBars pre-population
-- [ ] 17-04-PLAN.md — Verification: tsc clean build + 7 human gameplay checks
+- [x] 17-03-PLAN.md — IntraChart overhaul: TODAY/ALL tabs, sliding window, previousDayBars pre-population
+- [x] 17-04-PLAN.md — Verification: tsc clean build + 7 human gameplay checks
 
 ### Phase 18: Market Clock Speed Control
 **Goal**: Add a clock speed toggle button next to the market clock that cycles through 1x → 2x → 5x → 1x. All players can access it. All market events, messages, and sounds fire normally at the scaled rate. The existing `+5m`/`+1h` debug buttons are removed and replaced by this system.
@@ -130,7 +131,20 @@ Plan list:
 **Plans**: 2 plans
 Plan list:
 - [x] 18-01-PLAN.md — Hook + App wiring: parameterize useMarketClock, add speed state and cycle button, remove debug buttons
-- [ ] 18-02-PLAN.md — Human verification: in-browser checks for speed cycling, clock acceleration, and day reset
+- [x] 18-02-PLAN.md — Human verification: in-browser checks for speed cycling, clock acceleration, and day reset
+
+### Phase 19: Custom Art Asset Pipeline
+**Goal**: Create a new `art-assets` git branch that replaces hardcoded visual assets (ASCII ending art, CSS GuruTube emoji faces, black phone lock screen) with `<img>` references pointing to named placeholder files in `public/assets/`. The master branch retains the current generated look; the new branch sets up the swap-in pipeline so custom artwork can be dropped into `public/assets/` by filename match.
+**Depends on**: Phase 18
+**Requirements**: ART-01
+**Success Criteria**:
+  1. A `public/assets/` folder exists on the new branch with named placeholder images for each asset type.
+  2. Ending screens load artwork from `public/assets/endings/<ending-name>.png` (or agreed format) instead of inline ASCII.
+  3. GuruTube emoji faces load from `public/assets/guru/<state>.png` instead of CSS-only rendering.
+  4. Phone lock screen background loads from `public/assets/lockscreen/bg.png` instead of a black fill.
+  5. If a placeholder file is missing, the component falls back gracefully (no broken image icons).
+  6. Naming convention is documented (one line per asset) so the artist knows exactly what to name their files.
+**Plans**: TBD
 
 ## Progress Table
 
@@ -152,5 +166,6 @@ Plan list:
 | 14: Shark Loans | 3/3 | Completed | 2026-03-14 |
 | 15: Live Market & Polish | 6/6 | Completed | 2026-03-16 |
 | 16: QoL Polish | 1/3 | In Progress | — |
-| 17: Phone Lock & Chart | 2/4 | In Progress | — |
-| 18: Clock Speed Control | 1/2 | In Progress | — |
+| 17: Phone Lock & Chart | 4/4 | Completed | 2026-03-19 |
+| 18: Clock Speed Control | 2/2 | Completed | 2026-03-19 |
+| 19: Custom Art Pipeline | 0/? | Not Started | — |
