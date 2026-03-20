@@ -13,7 +13,7 @@
 - [x] **Phase 10: Social Expansion & GuruTube Overhaul** - Dynamic GuruTube UI (charts, marquees, emotions) and high-volume narrative templates.
 - [x] **Phase 11: Granular Narrative & Debt Foundation** - 14-tier narrative brackets, 800+ message templates, and groundwork for loans/debt.
 - [x] **Phase 12: Multiple Endings Expansion** - 10 distinct endings with WSB-ironic copy, pixel art sprites, and behavior-based detection cascade.
-- [x] **Phase 16: QoL Polish** - Market-hour gating, intraday message scheduling, GuruTube content expansion, readit text fix. (completed 2026-03-17)
+- [x] **Phase 16: QoL Polish** - Market-hour gating, intraday message scheduling, GuruTube content expansion, readit text fix. (completed 2026-03-17)
 - [x] **Phase 17: Phone Lock Screen & Chart Overhaul** - uPhone lock screen with message previews when laptop focused; chart timeframe redesign (TODAY: 1m/10m/30m, ALL: 1h/4h/1d) with sliding window starting from previous day data. (completed 2026-03-18)
 - [x] **Phase 18: Market Clock Speed Control** - Clock speed toggle (1x/2x/5x/10x/100x) next to market clock, speed resets on NEXT DAY, debug mode always-on NEXT DAY button. (completed 2026-03-18)
 
@@ -144,7 +144,12 @@ Plan list:
   4. Phone lock screen background loads from `public/assets/lockscreen/bg.png` instead of a black fill.
   5. If a placeholder file is missing, the component falls back gracefully (no broken image icons).
   6. Naming convention is documented (one line per asset) so the artist knows exactly what to name their files.
-**Plans**: TBD
+**Plans**: 4 plans
+**Plan list**:
+- [ ] 19-01-PLAN.md — Branch setup: create art-assets branch, generate 22 placeholder PNGs, write ASSETS.md manifest
+- [ ] 19-02-PLAN.md — Component swaps: EndingScreen PixelArt -> img, GuruTube emoji SVG -> img
+- [ ] 19-03-PLAN.md — Component swaps: PhoneApp lock screen bg, MessageList/Thread contact avatars, ReaditTab profile avatar
+- [ ] 19-04-PLAN.md — Final build verification and human visual check of all 5 asset swap points
 
 ## Progress Table
 
@@ -168,4 +173,4 @@ Plan list:
 | 16: QoL Polish | 1/3 | In Progress | — |
 | 17: Phone Lock & Chart | 4/4 | Completed | 2026-03-19 |
 | 18: Clock Speed Control | 2/2 | Completed | 2026-03-19 |
-| 19: Custom Art Pipeline | 0/? | Not Started | — |
+| 19: Custom Art Pipeline | 0/4 | Not Started | — |
