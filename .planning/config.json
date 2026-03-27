@@ -1,0 +1,7 @@
+{
+  "tech_stack": "React + Vite (Canvas/CSS)",
+  "game_loop": "Turn-based / Event-driven",
+  "visual_style": "Grayscale (4-color)",
+  "complexity": "Narrative-focused (Scripted)",
+  "starting_capital": 100000
+}

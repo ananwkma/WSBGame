@@ -1,0 +1,90 @@
+# Requirements
+
+## Visuals & Aesthetic (VIS)
+- **VIS-01:** The entire game must render using a 4-color grayscale "Game Boy Pocket" palette via SVG `feColorMatrix`.
+- **VIS-02:** Dual-interface layout: A central "Laptop Screen" and a peripheral "Handheld Phone."
+- **VIS-03:** Pixel-perfect rendering using `image-rendering: pixelated` and 8x8 grid alignment.
+- **VIS-04:** Interface must be responsive, adapting the laptop/phone layout for different screen sizes (Laptop focus vs. Phone focus).
+
+## Trading Engine (TRADE)
+- **TRADE-01: Robbinghood App:** A simulated trading interface for buying and selling assets.
+- **TRADE-02: Asset Support:** Support for Stocks (shares) and basic Options (Calls/Puts).
+- **TRADE-03: Portfolio Tracking:** Real-time display of Net Worth, Day Gain/Loss, and Total Gain/Loss.
+- **TRADE-04: Charts:** Stair-step pixel line graphs for individual stocks and total portfolio performance.
+- **TRADE-05: Market Simulation:** Prices update based on "Steps" (narrative beats) rather than real-time clock.
+
+## Narrative & Social (NARR)
+- **NARR-01: r/wsb Forum:** A scrolling feed of "Due Diligence" (DD), Memes, and "Loss Porn" posts.
+- **NARR-02: Messages App:** Direct message threads from "Ape Friend" (encourages risk) and "The Wife" (encourages stability).
+- **NARR-03: GuruTube:** Parody video player featuring pixel-frame animations of "finance gurus" giving advice.
+- **NARR-04: Dynamic Content:** Forum posts and messages must change based on the player's current trades and market volatility.
+
+## Economics & Progression (ECON)
+- **ECON-01: Starting Capital:** Player starts with $100,000 cash.
+- **ECON-02: Loss Porn Karma:** A reputation system where losing significant money on "YOLO" trades earns community respect.
+- **ECON-03: FOMO Meter:** A psychological stat that increases when reading hyped forum posts, affecting UI stability (jitter).
+- **ECON-04: Multi-Endings:** At least three distinct endings based on Net Worth and Karma (e.g., "Moon Millionaire," "Community Legend," "Dumpster Behind Wendy's").
+
+## Technical (TECH)
+- **TECH-01: Framework:** Built with React + Vite for fast UI-driven development.
+- **TECH-02: State Management:** Global game state (Money, Stocks, Reputation, Story Progress) managed via Zustand for performance.
+- **TECH-03: Persistence:** Simple local storage save system to track progress between sessions.
+
+## Advanced Features (Phase 5+)
+- **TRADE-06: Options Support:** User can buy Calls and Puts for all stocks with turn-based expiry.
+- **TRADE-07: Real-time Cost Calculation:** Trade page shows expected cost and buying power before execution.
+- **TRADE-08: "All In" Execution:** Shortcut to spend all available cash on a specific stock or option.
+- **NARR-05: Reactive Social Feed:** Forum posts and messages dynamically respond to stock performance and portfolio changes.
+- **VIS-05: Enhanced Readability:** High-contrast bold text for mobile/phone interface to improve accessibility.
+
+## Accurate Options Engine (Phase 9)
+- **TRADE-09: Black-Scholes Model:** Options pricing uses a standard BS approximation for calls and puts.
+- **TRADE-10: Implied Volatility (IV):** Each stock has a unique IV profile that changes based on market events and "Hype."
+- **TRADE-11: Options Greeks:** Real-time calculation of Delta, Gamma, Theta, and Vega for all options.
+- **TRADE-12: IV Crush Logic:** IV spikes during "Hype" phases and drops after significant price movements or "Earnings."
+
+## Live Market & Events (Phase 15)
+- **TRADE-13: Live Market Clock:** Stock prices update continuously on a real-time interval (2 real seconds = 1 in-game minute; 1 in-game hour = 2 real minutes). Price movement magnitude scales with each stock's volatility profile.
+- **TRADE-14: Intraday Chart Timeframes:** Charts support multiple zoom levels showing OHLC-style data: 1-minute, 30-minute, 1-hour, and daily views. Daily chart shows full-session movement.
+- **EVT-01: Market Events:** Scheduled or probabilistic intraday events (earnings, Fed announcements, meme stock frenzies) cause significant price spikes/drops and narrative reactions.
+- **UX-01: UI & Animation Polish:** Key game moments (big gains, big losses, borrowing, endings) have micro-animations and/or audio cues consistent with the pixel art aesthetic.
+- **UX-02: QoL Polish:** Market-hour gating (NEXT DAY and trading disabled while market is open), intraday message scheduling (random timing + net-worth triggers), GuruTube content expanded to ≥15 messages per ticker per sentiment (≥90 total), readit forum text legible.
+- **UX-03: Phone Lock Screen & Chart Overhaul:** uPhone shows black lock screen when laptop is focused with message preview notifications on arrival; IntraChart TODAY tab has 1m/10m/30m timeframes, ALL tab has 1h/4h/1d timeframes, both supporting line and candle; chart uses a fixed-width sliding window pre-populated with previous day data each morning.
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| VIS-01 | Phase 1 | Satisfied |
+| VIS-02 | Phase 1 | Satisfied |
+| VIS-03 | Phase 1 | Satisfied |
+| VIS-04 | Phase 1 | Satisfied |
+| TRADE-01 | Phase 2 | Satisfied |
+| TRADE-02 | Phase 2 | Satisfied |
+| TRADE-03 | Phase 2 | Satisfied |
+| TRADE-04 | Phase 2 | Satisfied |
+| TRADE-05 | Phase 2 | Satisfied |
+| NARR-01 | Phase 3 | Satisfied |
+| NARR-02 | Phase 3 | Satisfied |
+| NARR-03 | Phase 3 | Satisfied |
+| NARR-04 | Phase 3 | Satisfied |
+| ECON-01 | Phase 2 | Satisfied |
+| ECON-02 | Phase 3 | Satisfied |
+| ECON-03 | Phase 3 | Satisfied |
+| ECON-04 | Phase 4 | Satisfied |
+| TECH-01 | Phase 1 | Satisfied |
+| TECH-02 | Phase 2 | Satisfied |
+| TECH-03 | Phase 4 | Satisfied |
+| TRADE-06 | Phase 5 | Complete |
+| TRADE-07 | Phase 5 | Pending |
+| TRADE-08 | Phase 5 | Pending |
+| NARR-05 | Phase 5 | Pending |
+| VIS-05 | Phase 5 | Pending |
+| TRADE-09 | Phase 9 | Pending |
+| TRADE-10 | Phase 9 | Complete |
+| TRADE-11 | Phase 9 | Complete |
+| TRADE-12 | Phase 9 | Complete |
+
+| UX-02 | Phase 16 | Complete |
+
+| UX-03 | Phase 17 | Complete |
